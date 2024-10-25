@@ -1,0 +1,131 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum role {
+  admin
+  agent_manager
+  agent
+  customer
+  user
+}
+
+enum agent_status {
+  active
+  inactive
+}
+
+model user {
+  id                    Int            @id @default(autoincrement())
+  firstname             String
+  lastname              String
+  profile_url           String?
+  login_attempts        Int            @default(0)
+  lock_until            DateTime?
+  is_2fa_enabled        Boolean        @default(true)
+  is_suspended          Boolean        @default(false)
+  address               String
+  email                 String         @unique
+  password              String
+  phone_number          String         @unique
+  whatsapp_number       String         @unique
+  created_at            DateTime       @default(now())
+  updated_at            DateTime       @updatedAt
+  role                  role           @default(user)
+  agent                 agent?
+  refresh_token_version String?
+  session               session[]
+  otp                   otp[]
+  activity_log          activity_log[]
+}
+
+model agency {
+  id                   Int          @id @default(autoincrement())
+  name                 String       @unique
+  logo_url             String?
+  address              String
+  phone                String
+  email                String
+  created_at           DateTime     @default(now())
+  updated_at           DateTime     @updatedAt
+  user_lock_minutes    Int?         @default(5)
+  user_login_attempts  Int?         @default(5)
+  account_lock_enabled Boolean      @default(true)
+  agent                agent[]
+  agency_keys          agency_keys?
+}
+
+model agent {
+  id           Int           @id @default(autoincrement())
+  agent_status agent_status  @default(inactive)
+  user_id      Int           @unique
+  user         user          @relation(fields: [user_id], references: [id])
+  agency       agency        @relation(fields: [agency_id], references: [id])
+  agency_id    Int
+  created_at   DateTime      @default(now())
+  updated_at   DateTime      @updatedAt
+  start_hour   Int?
+  end_hour     Int?
+  agency_keys  agency_keys[]
+}
+
+model agency_keys {
+  id                  Int      @id @default(autoincrement())
+  agency_id           Int      @unique
+  agency              agency   @relation(fields: [agency_id], references: [id])
+  twilio_sid          String
+  twilio_auth_token   String
+  whatsapp_auth_token String?
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+  agent               agent?   @relation(fields: [agentId], references: [id])
+  agentId             Int?
+}
+
+model session {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  user       user     @relation(fields: [user_id], references: [id])
+  token      String
+  user_agent String?
+  device_id  String?  @unique
+  expires_at DateTime
+  revoked    Boolean  @default(false)
+  ipAddress  String?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model otp {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  user       user     @relation(fields: [user_id], references: [id])
+  otp        String
+  is_active  Boolean  @default(true)
+  expires_at DateTime
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model activity_log {
+  id          Int      @id @default(autoincrement())
+  user        user     @relation(fields: [user_id], references: [id])
+  user_id     Int
+  action      String
+  description String?
+  ip_addres   String?
+  user_agent  String?
+  location    String?
+  created_at  DateTime @default(now())
+}
