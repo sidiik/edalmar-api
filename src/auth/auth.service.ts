@@ -79,22 +79,22 @@ export class AuthService {
 
       if (!is_password_valid) {
         login_attempts = login_attempts + 1;
-
-        await this.prismaService.user.update({
-          where: {
-            id: user.id,
-          },
-          data: {
-            login_attempts,
-            lock_until:
-              login_attempts >= user.agent.agency.user_login_attempts
-                ? dayjs()
-                    .add(user.agent.agency.user_lock_minutes, 'minute')
-                    .toDate()
-                : null,
-          },
-        });
-
+        if (user.agent.agency.account_lock_enabled) {
+          await this.prismaService.user.update({
+            where: {
+              id: user.id,
+            },
+            data: {
+              login_attempts,
+              lock_until:
+                login_attempts >= user.agent.agency.user_login_attempts
+                  ? dayjs()
+                      .add(user.agent.agency.user_lock_minutes, 'minute')
+                      .toDate()
+                  : null,
+            },
+          });
+        }
         throw new UnauthorizedException(
           new ApiResponse(
             {
@@ -226,7 +226,7 @@ export class AuthService {
       this.messengerService.sendWaMessage(
         '14155238886',
         user.whatsapp_number,
-        `Your OTP code is ${otp}. It expires in 5 minutes. Do not share this code with anyone.`,
+        `Dear ${user.firstname} ${user.lastname}, Your OTP code is ${otp}. It expires in 5 minutes. Do not share this code with anyone.`,
         agencyName,
         sid,
         authToken,
@@ -279,7 +279,7 @@ export class AuthService {
       });
 
       if (!user) {
-        throw new UnauthorizedException(authErrors.invalidCredentials);
+        throw new UnauthorizedException(authErrors.otp_invalid);
       }
 
       const otp = await this.verifyToken(user, token);
@@ -331,9 +331,10 @@ export class AuthService {
     device_id?: string,
   ) {
     try {
-      const newDeviceId = uuid();
-
-      console.log(newDeviceId, device_id);
+      let newDeviceId = device_id;
+      if (!device_id) {
+        newDeviceId = uuid();
+      }
 
       res.cookie('refresh_token', refresh_token, {
         httpOnly: true,
@@ -346,6 +347,7 @@ export class AuthService {
         httpOnly: true,
         sameSite: 'none',
         secure: true,
+        expires: new Date('9999-12-31T23:59:59Z'),
       });
 
       res.cookie('access_token', access_token, {
@@ -359,12 +361,12 @@ export class AuthService {
         where: {
           user_id,
           user_agent: userAgent.toLowerCase(),
-          ipAddress,
           device_id: device_id || newDeviceId,
         },
         update: {
           token: refresh_token,
           expires_at: dayjs().add(1, 'day').toDate(),
+          ipAddress,
         },
         create: {
           user_id,
@@ -377,6 +379,61 @@ export class AuthService {
       });
     } catch (error) {
       console.log(error);
+      throw new ApiException(error.response, error.status);
+    }
+  }
+
+  // refresh token
+  async refreshToken(res: Response, user_id: number, metadata: any) {
+    try {
+      const user = await this.prismaService.user.findUnique({
+        where: {
+          id: user_id,
+        },
+      });
+
+      if (!user) {
+        throw new UnauthorizedException(authErrors.invalidCredentials);
+      }
+
+      if (user.is_suspended) {
+        throw new UnauthorizedException(authErrors.accout_suspended);
+      }
+
+      const { access_token, refresh_token } = await this.generateTokens(user);
+
+      await this.storeTokensInCookie(
+        res,
+        access_token,
+        refresh_token,
+        user.id,
+        metadata.userAgent,
+        metadata.ipAddress,
+        metadata.deviceId,
+      );
+
+      return new ApiResponse(null);
+    } catch (error) {
+      throw new ApiException(error.response, error.status);
+    }
+  }
+
+  // get user by id
+  async getUserById(id: number) {
+    try {
+      const user = await this.prismaService.user.findUnique({
+        where: {
+          id,
+        },
+      });
+
+      if (!user) {
+        throw new UnauthorizedException(authErrors.invalidCredentials);
+      }
+
+      return user;
+    } catch (error) {
+      throw new ApiException(error.response, error.status);
     }
   }
 }

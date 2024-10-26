@@ -3,14 +3,16 @@ import {
   Controller,
   HttpCode,
   HttpStatus,
-  Param,
   Post,
   Req,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ISignIn, IVerifyOTP } from './auth.dto';
 import { Response, Request } from 'express';
+import { RefreshGuard } from 'guards/refresh.guard';
+import { AuthGuard } from 'guards/jwt.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -39,5 +41,17 @@ export class AuthController {
       res,
       req.metadata,
     );
+  }
+
+  @Post('refresh_token')
+  @UseGuards(RefreshGuard)
+  refreshToken(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    return this.authService.refreshToken(res, req['user_id'], req.metadata);
+  }
+
+  @Post('test')
+  @UseGuards(AuthGuard)
+  test() {
+    return 'hi mom';
   }
 }

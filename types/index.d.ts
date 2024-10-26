@@ -5,7 +5,7 @@ declare module 'express' {
     metadata: {
       clientIp?: string;
       userAgent?: string;
-      user?: user;
+      user?: number;
       deviceId?: string;
     };
   }

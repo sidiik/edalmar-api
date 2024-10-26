@@ -1,12 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { ApiException } from 'helpers/ApiException';
-import { PrismaService } from 'src/prisma.service';
 import * as Twilio from 'twilio';
 
 @Injectable()
 export class MessengerService {
-  constructor(private readonly prismaService: PrismaService) {}
-
   async sendWaMessage(
     from: string,
     to: string,

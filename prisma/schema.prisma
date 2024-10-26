@@ -53,6 +53,8 @@ model user {
 model agency {
   id                   Int          @id @default(autoincrement())
   name                 String       @unique
+  slug                 String?      @unique
+  agency_disabled      Boolean      @default(false)
   logo_url             String?
   address              String
   phone                String
@@ -86,6 +88,7 @@ model agency_keys {
   agency              agency   @relation(fields: [agency_id], references: [id])
   twilio_sid          String
   twilio_auth_token   String
+  twilio_phone_number String?  @default("14155238886")
   whatsapp_auth_token String?
   created_at          DateTime @default(now())
   updated_at          DateTime @updatedAt
@@ -97,7 +100,7 @@ model session {
   id         Int      @id @default(autoincrement())
   user_id    Int
   user       user     @relation(fields: [user_id], references: [id])
-  token      String
+  token      String   @unique
   user_agent String?
   device_id  String?  @unique
   expires_at DateTime
@@ -123,6 +126,7 @@ model activity_log {
   user        user     @relation(fields: [user_id], references: [id])
   user_id     Int
   action      String
+  body        String?
   description String?
   ip_addres   String?
   user_agent  String?
