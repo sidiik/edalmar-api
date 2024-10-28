@@ -12,6 +12,7 @@ export class SeedController {
 
   @Post('agency')
   async seedAgency() {
+    return 404;
     return this.seedService.seedAgency();
   }
 }

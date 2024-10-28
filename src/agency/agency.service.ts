@@ -1,15 +1,20 @@
 import {
+  BadRequestException,
   ConflictException,
   HttpStatus,
+  Inject,
   Injectable,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import {
   ICreateAgency,
   ILinkAgent,
   IListAgencyFilters,
+  IResetAgentPassword,
   IUpdateAgency,
+  IUpdateAgencyKeys,
 } from './agency.dto';
 import { ApiException } from 'helpers/ApiException';
 import { genSlug } from 'helpers/slug';
@@ -18,7 +23,9 @@ import { ApiResponse } from 'helpers/ApiResponse';
 import { Request } from 'express';
 import { actions } from 'constants/actions';
 import { DBLoggerService } from 'src/logger/logger.service';
-import { Prisma } from '@prisma/client';
+import { Prisma, role, user } from '@prisma/client';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import * as argon2 from 'argon2';
 
 @Injectable()
 export class AgencyService {
@@ -26,6 +33,7 @@ export class AgencyService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly dbLogger: DBLoggerService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   // get all agencies
@@ -59,6 +67,9 @@ export class AgencyService {
         skip,
         take: size,
         where: whereClause,
+        orderBy: {
+          created_at: 'desc',
+        },
       });
 
       const totalCount = await this.prismaService.agency.count({
@@ -99,7 +110,7 @@ export class AgencyService {
         );
       }
 
-      await this.prismaService.agency.create({
+      const agency = await this.prismaService.agency.create({
         data: {
           name: data.agencyName,
           address: data.address,
@@ -119,7 +130,7 @@ export class AgencyService {
         metadata: req.metadata,
       });
 
-      return new ApiResponse(null);
+      return new ApiResponse(agency);
     } catch (error) {
       this.logger.error(error);
       throw new ApiException(error.response, error.status);
@@ -152,7 +163,7 @@ export class AgencyService {
         );
       }
 
-      await this.prismaService.agency.update({
+      const agency = await this.prismaService.agency.update({
         where: {
           id: agencyId,
         },
@@ -162,6 +173,7 @@ export class AgencyService {
           phone: rest.phone,
           email: rest.email,
           slug,
+          agency_disabled: data.markAsDisabled,
         },
       });
 
@@ -174,7 +186,7 @@ export class AgencyService {
         metadata: req.metadata,
       });
 
-      return new ApiResponse(null);
+      return new ApiResponse(agency);
     } catch (error) {
       throw new ApiException(error.response, error.status);
     }
@@ -200,10 +212,38 @@ export class AgencyService {
         );
       }
 
+      this.logger.log('Check if agency exists');
+      const agency = await this.prismaService.agency.findFirst({
+        where: {
+          slug: data.agencySlug,
+        },
+      });
+
+      if (!agency) {
+        throw new ConflictException(
+          ApiResponse.failure(
+            null,
+            agencyErrors.agencyNotFound,
+            HttpStatus.CONFLICT,
+          ),
+        );
+      }
+
+      if (agency.agency_disabled) {
+        throw new BadRequestException(
+          ApiResponse.failure(
+            null,
+            agencyErrors.agencyDisabled,
+            HttpStatus.BAD_REQUEST,
+          ),
+        );
+      }
+
       this.logger.log('Check if agent exists');
-      const agent = await this.prismaService.agent.findUnique({
+      const agent = await this.prismaService.agent.findFirst({
         where: {
           user_id: user.id,
+          agency_id: agency.id,
         },
       });
 
@@ -218,6 +258,7 @@ export class AgencyService {
       }
 
       this.logger.log('Linking agent to agency');
+
       await this.prismaService.agent.create({
         data: {
           agent_status: data.agent_status,
@@ -234,16 +275,18 @@ export class AgencyService {
         },
       });
 
-      // Update user role to agent
-      this.logger.log('Updating user role to agent');
-      await this.prismaService.user.update({
-        where: {
-          email: data.email,
-        },
-        data: {
-          role: 'agent',
-        },
-      });
+      if (user.role !== role.admin && user.role !== role.agent_manager) {
+        // Update user role to agent
+        this.logger.log('Updating user role to agent');
+        await this.prismaService.user.update({
+          where: {
+            email: data.email,
+          },
+          data: {
+            role: 'agent',
+          },
+        });
+      }
 
       //   store the activity log
       await this.dbLogger.log({
@@ -253,10 +296,214 @@ export class AgencyService {
         user_id: req.metadata.user,
         metadata: req.metadata,
       });
-
       return new ApiResponse(null);
     } catch (error) {
       console.log(error);
+      throw new ApiException(error.response, error.status);
+    }
+  }
+
+  // Get all agents linked to an agency
+  async getAgents(slug: string) {
+    try {
+      const agents = await this.prismaService.agent.findMany({
+        where: {
+          agency: {
+            slug,
+          },
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstname: true,
+              lastname: true,
+              address: true,
+              email: true,
+              phone_number: true,
+              role: true,
+              is_2fa_enabled: true,
+              is_suspended: true,
+              profile_url: true,
+            },
+          },
+        },
+      });
+
+      return new ApiResponse(agents);
+    } catch (error) {
+      throw new ApiException(error.response, error.status);
+    }
+  }
+
+  // Upsert agency keys
+  async upsertAgencyKeys(data: IUpdateAgencyKeys, metadata: any) {
+    try {
+      this.logger.log('Checking if agency exists');
+      const agency = await this.prismaService.agency.findFirst({
+        where: {
+          id: data.agencyId,
+        },
+      });
+
+      if (!agency) {
+        throw new ConflictException(
+          ApiResponse.failure(
+            null,
+            agencyErrors.agencyNotFound,
+            HttpStatus.CONFLICT,
+          ),
+        );
+      }
+
+      this.logger.log('Upserting agency keys');
+      await this.prismaService.agency_keys.upsert({
+        where: {
+          agency_id: data.agencyId,
+        },
+        update: {
+          twilio_sid: data.twilioSid,
+          twilio_auth_token: data.twilioAuthToken,
+          twilio_phone_number: data.twilioPhoneNumber,
+          whatsapp_auth_token: data.whatsappAuthToken,
+        },
+        create: {
+          twilio_sid: data.twilioSid,
+          twilio_auth_token: data.twilioAuthToken,
+          twilio_phone_number: data.twilioPhoneNumber,
+          whatsapp_auth_token: data.whatsappAuthToken,
+          agency_id: data.agencyId,
+        },
+      });
+
+      this.logger.log('Storing the activity log');
+      await this.dbLogger.log({
+        action: actions.agency.keysUpserted,
+        body: JSON.stringify(data),
+        description: `Agency keys upserted for ${agency.name}`,
+        user_id: metadata.user,
+        metadata,
+      });
+
+      this.logger.log('Agency keys upserted');
+
+      return new ApiResponse(null);
+    } catch (error) {
+      throw new ApiException(error.response, error.status);
+    }
+  }
+
+  // Check if a user is linked to an agency
+  async checkAgentLinked(
+    userId: number,
+    agencySlug: string,
+    isCurrentUser: boolean = true,
+  ) {
+    try {
+      this.logger.log('Checking if agent is linked to agency');
+      const user =
+        isCurrentUser &&
+        ((await this.cacheManager.get('USER-' + userId)) as user);
+
+      if (!user && isCurrentUser) {
+        throw new NotFoundException(
+          ApiResponse.failure(
+            null,
+            agencyErrors.agentNotFound,
+            HttpStatus.NOT_FOUND,
+          ),
+        );
+      }
+
+      if (user.role === role.admin && isCurrentUser) {
+        return { user };
+      }
+
+      const agent = await this.prismaService.agent.findFirst({
+        where: {
+          user_id: userId,
+          agency: {
+            slug: agencySlug,
+          },
+        },
+      });
+
+      if (!agent) {
+        this.logger.error("Agent isn't linked to the agency");
+        throw new NotFoundException(
+          ApiResponse.failure(
+            null,
+            agencyErrors.agencyNotFound,
+            HttpStatus.NOT_FOUND,
+          ),
+        );
+      }
+
+      if (agent?.agent_status === 'inactive') {
+        throw new NotFoundException(
+          ApiResponse.failure(
+            null,
+            agencyErrors.agentNotFound,
+            HttpStatus.NOT_FOUND,
+          ),
+        );
+      }
+
+      return { user };
+    } catch (error) {
+      throw new ApiException(error.response, error.status);
+    }
+  }
+
+  // Reset agent password
+  async resetAgentPassword(data: IResetAgentPassword, metadata: any) {
+    try {
+      this.logger.log(
+        'Checking if agent is linked to agency ' + data.agencySlug,
+      );
+      await this.checkAgentLinked(metadata.user, data.agencySlug);
+
+      const user = await this.prismaService.user.findFirst({
+        where: {
+          email: data.email.toLowerCase(),
+        },
+      });
+
+      if (!user) {
+        this.logger.log("Agent doesn't exist");
+        throw new NotFoundException(
+          ApiResponse.failure(
+            null,
+            agencyErrors.agentNotFound,
+            HttpStatus.NOT_FOUND,
+          ),
+        );
+      }
+
+      this.logger.log('Check if the user is linked to the agency');
+      await this.checkAgentLinked(user.id, data.agencySlug, false);
+
+      this.logger.log('Resetting agent password');
+      await this.prismaService.user.update({
+        where: {
+          email: data.email.toLowerCase(),
+        },
+        data: {
+          password: await argon2.hash(data.newPassword),
+        },
+      });
+
+      this.logger.log('Storing the activity log');
+      await this.dbLogger.log({
+        action: actions.agent.passwordReset,
+        body: JSON.stringify(data),
+        description: `Agent password reset for ${data.email}`,
+        user_id: metadata.user,
+        metadata,
+      });
+
+      return ApiResponse.success(null);
+    } catch (error) {
       throw new ApiException(error.response, error.status);
     }
   }

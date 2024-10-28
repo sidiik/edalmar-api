@@ -7,6 +7,7 @@ declare module 'express' {
       userAgent?: string;
       user?: number;
       deviceId?: string;
+      userData?: user;
     };
   }
 }

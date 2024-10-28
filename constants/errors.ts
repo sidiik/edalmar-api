@@ -14,4 +14,10 @@ const agencyErrors = {
   agentNotFound: 'Agent not found',
 };
 
-export { authErrors, agencyErrors };
+const userErrors = {
+  userExists: 'User already exists',
+  userNotFound: 'User not found',
+  emailExists: 'Email is already taken, please use another email',
+};
+
+export { authErrors, agencyErrors, userErrors };

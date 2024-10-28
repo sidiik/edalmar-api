@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   HttpStatus,
+  Inject,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -13,10 +14,11 @@ import * as dayjs from 'dayjs';
 import { ApiResponse } from 'helpers/ApiResponse';
 import { MessengerService } from 'src/messenger/messenger.service';
 import { otpGenerator } from 'utils';
-import { user } from '@prisma/client';
+import { role, user } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { Response } from 'express';
 import { v4 as uuid } from 'uuid';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 
 @Injectable()
 export class AuthService {
@@ -24,7 +26,35 @@ export class AuthService {
     private readonly prismaService: PrismaService,
     private readonly messengerService: MessengerService,
     private readonly jwtService: JwtService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
+
+  async whoAmI(user_id: number) {
+    try {
+      const user = await this.cacheManager.get('USER-' + user_id.toString());
+
+      if (user) {
+        return user;
+      }
+
+      const { password, login_attempts, is_suspended, lock_until, ...rest } =
+        await this.prismaService.user.findUnique({
+          where: {
+            id: user_id,
+          },
+        });
+
+      if (!rest) {
+        throw new UnauthorizedException(authErrors.invalidCredentials);
+      }
+
+      await this.cacheManager.set('USER-' + rest.id.toString(), rest);
+
+      return rest;
+    } catch (error) {
+      throw new ApiException(error.response, error.status);
+    }
+  }
 
   // Sign in
   async signIn(data: ISignIn, res: Response, metadata: any) {
@@ -35,17 +65,6 @@ export class AuthService {
         where: {
           email,
         },
-        include: {
-          agent: {
-            select: {
-              agency: {
-                include: {
-                  agency_keys: true,
-                },
-              },
-            },
-          },
-        },
       });
 
       if (!user) {
@@ -54,6 +73,117 @@ export class AuthService {
 
       if (user.is_suspended) {
         throw new UnauthorizedException(authErrors.accout_suspended);
+      }
+
+      if (
+        (user.role === role.agent || user.role === role.agent_manager) &&
+        data.agency_slug
+      ) {
+        const agent = await this.prismaService.agent.findFirst({
+          where: {
+            agency: {
+              slug: data.agency_slug,
+            },
+            user: {
+              id: user.id,
+            },
+          },
+          include: {
+            agency: {
+              include: {
+                agency_keys: true,
+              },
+            },
+          },
+        });
+
+        let login_attempts = user.login_attempts;
+
+        if (user.lock_until && dayjs().isBefore(user.lock_until)) {
+          throw new UnauthorizedException(
+            new ApiResponse(
+              {
+                lock_until: user.lock_until,
+                login_attempts: user.login_attempts,
+              },
+              authErrors.account_temporarily_disabled,
+              HttpStatus.UNAUTHORIZED,
+            ),
+          );
+        } else {
+          if (user.lock_until) {
+            login_attempts = 0;
+          }
+        }
+
+        const is_password_valid = await argon2.verify(user.password, password);
+
+        if (!is_password_valid) {
+          login_attempts = login_attempts + 1;
+          if (agent.agency.account_lock_enabled) {
+            await this.prismaService.user.update({
+              where: {
+                id: user.id,
+              },
+              data: {
+                login_attempts,
+                lock_until:
+                  login_attempts >= agent.agency.user_login_attempts
+                    ? dayjs()
+                        .add(agent.agency.user_lock_minutes, 'minute')
+                        .toDate()
+                    : null,
+              },
+            });
+          }
+          throw new UnauthorizedException(
+            new ApiResponse(
+              {
+                attempts_left:
+                  agent.agency.user_login_attempts - login_attempts,
+              },
+              authErrors.invalidCredentials,
+              HttpStatus.UNAUTHORIZED,
+            ),
+          );
+        }
+
+        await this.resetLoginAttempts(user.email);
+
+        if (user.is_2fa_enabled) {
+          return this.sendOtpMessage({
+            user,
+            agencyName: agent.agency.name,
+            sid: agent.agency.agency_keys.twilio_sid,
+            authToken: agent.agency.agency_keys.twilio_auth_token,
+          });
+        }
+
+        await this.prismaService.user.update({
+          where: {
+            id: user.id,
+          },
+
+          data: {
+            login_attempts: 0,
+            lock_until: null,
+          },
+        });
+
+        const { access_token, refresh_token } = await this.generateTokens(user);
+        await this.storeTokensInCookie(
+          res,
+          access_token,
+          refresh_token,
+          user.id,
+          metadata.userAgent,
+          metadata.clientIp,
+          metadata.deviceId,
+        );
+
+        return new ApiResponse({
+          is2faEnabled: false,
+        });
       }
 
       let login_attempts = user.login_attempts;
@@ -79,27 +209,21 @@ export class AuthService {
 
       if (!is_password_valid) {
         login_attempts = login_attempts + 1;
-        if (user.agent.agency.account_lock_enabled) {
-          await this.prismaService.user.update({
-            where: {
-              id: user.id,
-            },
-            data: {
-              login_attempts,
-              lock_until:
-                login_attempts >= user.agent.agency.user_login_attempts
-                  ? dayjs()
-                      .add(user.agent.agency.user_lock_minutes, 'minute')
-                      .toDate()
-                  : null,
-            },
-          });
-        }
+        await this.prismaService.user.update({
+          where: {
+            id: user.id,
+          },
+          data: {
+            login_attempts,
+            lock_until:
+              login_attempts >= 5 ? dayjs().add(10, 'minute').toDate() : null,
+          },
+        });
+
         throw new UnauthorizedException(
           new ApiResponse(
             {
-              attempts_left:
-                user.agent.agency.user_login_attempts - login_attempts,
+              attempts_left: 5 - login_attempts,
             },
             authErrors.invalidCredentials,
             HttpStatus.UNAUTHORIZED,
@@ -112,9 +236,9 @@ export class AuthService {
       if (user.is_2fa_enabled) {
         return this.sendOtpMessage({
           user,
-          agencyName: user.agent.agency.name,
-          sid: user.agent.agency.agency_keys.twilio_sid,
-          authToken: user.agent.agency.agency_keys.twilio_auth_token,
+          agencyName: process.env.DEFAULT_AGENCY_NAME,
+          sid: process.env.DEFAULT_SID,
+          authToken: process.env.DEFAULT_AUTH_TOKEN,
         });
       }
 
@@ -177,6 +301,9 @@ export class AuthService {
 
   // async generate access token and refresh tokens
   async generateTokens(user: user) {
+    const { password, login_attempts, is_suspended, lock_until, ...rest } =
+      user;
+    await this.cacheManager.set('USER-' + user.id.toString(), rest);
     return {
       access_token: this.jwtService.sign(
         { subject: user.id },
@@ -332,7 +459,23 @@ export class AuthService {
   ) {
     try {
       let newDeviceId = device_id;
+
       if (!device_id) {
+        newDeviceId = uuid();
+      }
+
+      // check if the device id is already linked to another user
+      const existingSession = await this.prismaService.session.findFirst({
+        where: {
+          device_id: newDeviceId,
+          user_id: {
+            not: user_id,
+          },
+        },
+      });
+
+      // generate new device id if the current device id is linked to another user
+      if (existingSession) {
         newDeviceId = uuid();
       }
 
@@ -432,6 +575,41 @@ export class AuthService {
       }
 
       return user;
+    } catch (error) {
+      throw new ApiException(error.response, error.status);
+    }
+  }
+
+  // Sign out
+  async signOut(metadata: any, res: Response) {
+    try {
+      res.clearCookie('access_token');
+      res.clearCookie('refresh_token');
+      res.clearCookie('device_id');
+      await this.prismaService.session.deleteMany({
+        where: {
+          user_id: metadata.user_id,
+          user_agent: metadata.userAgent.toLowerCase(),
+          device_id: metadata.deviceId,
+        },
+      });
+
+      // Clear the cache
+      await this.cacheManager.del('USER-' + metadata.user);
+
+      // Store the activity log
+      await this.prismaService.activity_log.create({
+        data: {
+          user_id: metadata.user,
+          action: 'user.signout',
+          body: null,
+          description: 'User signed out',
+          ip_addres: metadata.clientIp,
+          user_agent: metadata?.userAgent?.toLowerCase(),
+        },
+      });
+
+      return new ApiResponse(null);
     } catch (error) {
       throw new ApiException(error.response, error.status);
     }

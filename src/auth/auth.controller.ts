@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Post,
@@ -49,9 +50,16 @@ export class AuthController {
     return this.authService.refreshToken(res, req['user_id'], req.metadata);
   }
 
-  @Post('test')
+  @Post('signout')
+  @HttpCode(HttpStatus.OK)
   @UseGuards(AuthGuard)
-  test() {
-    return 'hi mom';
+  signOut(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    return this.authService.signOut(req.metadata, res);
+  }
+
+  @Get('whoami')
+  @UseGuards(AuthGuard)
+  whoAmI(@Req() req: Request) {
+    return this.authService.whoAmI(req.metadata.user);
   }
 }

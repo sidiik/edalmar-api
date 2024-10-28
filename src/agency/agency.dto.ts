@@ -1,6 +1,12 @@
 import { agent_status } from '@prisma/client';
 import { Transform } from 'class-transformer';
-import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class ICreateAgency {
   @IsString()
@@ -31,6 +37,9 @@ export class IUpdateAgency {
 
   @IsNumber()
   agencyId: number;
+
+  @IsBoolean()
+  markAsDisabled: boolean;
 }
 
 export class IUpdateAgencyKeys {
@@ -95,4 +104,15 @@ export class ILinkAgent {
 
   @IsEnum(agent_status)
   agent_status: agent_status;
+}
+
+export class IResetAgentPassword {
+  @IsString()
+  email: string;
+
+  @IsString()
+  newPassword: string;
+
+  @IsString()
+  agencySlug: string;
 }

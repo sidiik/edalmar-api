@@ -30,6 +30,7 @@ model user {
   id                    Int            @id @default(autoincrement())
   firstname             String
   lastname              String
+  first_login           Boolean        @default(true)
   profile_url           String?
   login_attempts        Int            @default(0)
   lock_until            DateTime?
@@ -43,7 +44,7 @@ model user {
   created_at            DateTime       @default(now())
   updated_at            DateTime       @updatedAt
   role                  role           @default(user)
-  agent                 agent?
+  agent                 agent[]
   refresh_token_version String?
   session               session[]
   otp                   otp[]
@@ -71,7 +72,7 @@ model agency {
 model agent {
   id           Int           @id @default(autoincrement())
   agent_status agent_status  @default(inactive)
-  user_id      Int           @unique
+  user_id      Int
   user         user          @relation(fields: [user_id], references: [id])
   agency       agency        @relation(fields: [agency_id], references: [id])
   agency_id    Int

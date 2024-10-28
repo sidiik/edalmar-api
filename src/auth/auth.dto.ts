@@ -8,6 +8,9 @@ export class ISignIn {
 
   @IsString()
   password: string;
+
+  @IsString()
+  agency_slug: string;
 }
 
 export class IVerifyOTP {

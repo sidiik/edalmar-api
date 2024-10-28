@@ -19,9 +19,9 @@ export class MessengerService {
         from: `whatsapp:${from}`,
         to: `whatsapp:${to}`,
         body:
-          `*${agencyName}*\n` +
           body +
-          '\n\n' +
+          `\n*${agencyName}*` +
+          '\n' +
           '```Powered by Shaab Solutions```',
         mediaUrl,
       });
