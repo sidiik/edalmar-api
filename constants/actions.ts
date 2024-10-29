@@ -8,9 +8,15 @@ export const actions = {
   agent: {
     linked: 'agent.linked',
     passwordReset: 'agent.passwordReset',
+    updated: 'agent.updated',
   },
   user: {
     created: 'user.created',
     updated: 'user.updated',
+  },
+  traveler: {
+    created: 'traveler.created',
+    updated: 'traveler.updated',
+    deleted: 'traveler.deleted',
   },
 };

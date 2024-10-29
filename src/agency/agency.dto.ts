@@ -29,6 +29,9 @@ export class IUpdateAgency {
   @IsString()
   address: string;
 
+  @IsNumber()
+  maxAgents: number;
+
   @IsString()
   phone: string;
 

@@ -7,7 +7,12 @@ import {
 } from '@nestjs/common';
 import { DBLoggerService } from 'src/logger/logger.service';
 import { PrismaService } from 'src/prisma.service';
-import { ICreateUser, IUpdateUser, IUserFilters } from './user.dto';
+import {
+  ICreateUser,
+  IModifyUserStatus,
+  IUpdateUser,
+  IUserFilters,
+} from './user.dto';
 import { ApiException } from 'helpers/ApiException';
 import { userErrors } from 'constants/index';
 import { ApiResponse } from 'helpers/ApiResponse';
@@ -266,6 +271,9 @@ export class UserService {
               start_hour: true,
               end_hour: true,
             },
+            where: {
+              user_id: userId,
+            },
           },
         },
       });
@@ -273,6 +281,68 @@ export class UserService {
       return ApiResponse.success({
         data: agencies,
       });
+    } catch (error) {
+      throw new ApiException(error.response, error.status);
+    }
+  }
+
+  // Update user status
+  async modifyUserStatus(data: IModifyUserStatus, metadata: any) {
+    try {
+      if (data.id === metadata.user) {
+        throw new ConflictException(
+          ApiResponse.failure(
+            null,
+            userErrors.cannotModifyOwnStatus,
+            HttpStatus.CONFLICT,
+          ),
+        );
+      }
+      const user = await this.prismaService.user.findUnique({
+        where: {
+          id: data.id,
+        },
+      });
+
+      if (!user) {
+        throw new ConflictException(
+          ApiResponse.failure(
+            null,
+            userErrors.userNotFound,
+            HttpStatus.NOT_FOUND,
+          ),
+        );
+      }
+
+      this.logger.log('Updating user status');
+      const updatedUser = await this.prismaService.user.update({
+        where: {
+          id: data.id,
+        },
+        data: {
+          is_suspended: data.isSuspended,
+          is_2fa_enabled: data.is2faEnabled,
+          role: data.role,
+        },
+      });
+
+      // Restore the cache
+      if (await this.cacheManager.get('USER-' + data.id)) {
+        const { password, login_attempts, is_suspended, lock_until, ...rest } =
+          updatedUser;
+        await this.cacheManager.set('USER-' + data.id, rest);
+      }
+
+      this.logger.log('Store the activity log');
+      await this.dbLoggerService.log({
+        action: actions.user.updated,
+        description: `User ${data.id} updated`,
+        body: JSON.stringify(data),
+        metadata,
+        user_id: metadata.user,
+      });
+
+      return ApiResponse.success(null);
     } catch (error) {
       throw new ApiException(error.response, error.status);
     }

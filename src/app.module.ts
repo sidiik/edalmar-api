@@ -8,6 +8,7 @@ import { RequestLoggerMiddleware } from 'middlewares/request-logger.middleware';
 import * as redisStore from 'cache-manager-redis-store';
 import { CacheModule } from '@nestjs/cache-manager';
 import { UserModule } from './user/user.module';
+import { TravelerModule } from './traveler/traveler.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { UserModule } from './user/user.module';
       ttl: 3600000 * 3,
     }),
     UserModule,
+    TravelerModule,
   ],
   controllers: [],
   providers: [],

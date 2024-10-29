@@ -18,7 +18,7 @@ import {
 } from './agency.dto';
 import { ApiException } from 'helpers/ApiException';
 import { genSlug } from 'helpers/slug';
-import { agencyErrors } from 'constants/index';
+import { agencyErrors, userErrors } from 'constants/index';
 import { ApiResponse } from 'helpers/ApiResponse';
 import { Request } from 'express';
 import { actions } from 'constants/actions';
@@ -26,6 +26,7 @@ import { DBLoggerService } from 'src/logger/logger.service';
 import { Prisma, role, user } from '@prisma/client';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import * as argon2 from 'argon2';
+import { IModifyAgentStatus } from 'src/user/user.dto';
 
 @Injectable()
 export class AgencyService {
@@ -172,6 +173,7 @@ export class AgencyService {
           address: rest.address,
           phone: rest.phone,
           email: rest.email,
+          max_agents: data.maxAgents,
           slug,
           agency_disabled: data.markAsDisabled,
         },
@@ -195,6 +197,19 @@ export class AgencyService {
   // Link an agent to an agency
   async linkAgent(data: ILinkAgent, req: Request) {
     try {
+      this.logger.log(
+        "Checking if total active agents is less than the agency's max agents",
+      );
+
+      const totalActiveAgents = await this.prismaService.agent.count({
+        where: {
+          agency: {
+            slug: data.agencySlug,
+          },
+          agent_status: 'active',
+        },
+      });
+
       this.logger.log('Check if user exists');
       const user = await this.prismaService.user.findFirst({
         where: {
@@ -234,6 +249,20 @@ export class AgencyService {
           ApiResponse.failure(
             null,
             agencyErrors.agencyDisabled,
+            HttpStatus.BAD_REQUEST,
+          ),
+        );
+      }
+
+      if (totalActiveAgents >= agency.max_agents) {
+        this.logger.error('Maximum number of agents reached');
+        throw new BadRequestException(
+          ApiResponse.failure(
+            {
+              maxAgents: agency.max_agents,
+              totalActiveAgents,
+            },
+            agencyErrors.maxAgentsReached,
             HttpStatus.BAD_REQUEST,
           ),
         );
@@ -304,8 +333,9 @@ export class AgencyService {
   }
 
   // Get all agents linked to an agency
-  async getAgents(slug: string) {
+  async getAgents(slug: string, metadata: any) {
     try {
+      await this.checkAgentLinked(metadata.user, slug);
       const agents = await this.prismaService.agent.findMany({
         where: {
           agency: {
@@ -394,10 +424,17 @@ export class AgencyService {
   }
 
   // Check if a user is linked to an agency
+  /**
+   ** userId: This is the user id to check if the user is linked to an agency, this is required
+   ** agencySlug: This is the agency slug to check if the user is linked to, this is required
+   ** isCurrentUser: This is a boolean to check if the user is the current user, this is optional and defaults to true
+   ** silent: This is a boolean to check if the function should throw an error or not, if the agent is inactive, this is optional and defaults to false
+   */
   async checkAgentLinked(
     userId: number,
     agencySlug: string,
     isCurrentUser: boolean = true,
+    silent: boolean = false,
   ) {
     try {
       this.logger.log('Checking if agent is linked to agency');
@@ -439,7 +476,7 @@ export class AgencyService {
         );
       }
 
-      if (agent?.agent_status === 'inactive') {
+      if (agent?.agent_status === 'inactive' && !silent) {
         throw new NotFoundException(
           ApiResponse.failure(
             null,
@@ -449,7 +486,7 @@ export class AgencyService {
         );
       }
 
-      return { user };
+      return { user, agent };
     } catch (error) {
       throw new ApiException(error.response, error.status);
     }
@@ -498,6 +535,88 @@ export class AgencyService {
         action: actions.agent.passwordReset,
         body: JSON.stringify(data),
         description: `Agent password reset for ${data.email}`,
+        user_id: metadata.user,
+        metadata,
+      });
+
+      return ApiResponse.success(null);
+    } catch (error) {
+      throw new ApiException(error.response, error.status);
+    }
+  }
+
+  // Modify agent status
+  async modifyAgentStatus(data: IModifyAgentStatus, metadata: any) {
+    try {
+      this.logger.log('Checking if agent is linked to agency');
+      const agentManager = await this.checkAgentLinked(
+        metadata.user,
+        data.agencySlug,
+      );
+
+      this.logger.log("Checking if agent is the current user's account");
+      if (agentManager.user.email === data.email) {
+        throw new BadRequestException(
+          ApiResponse.failure(
+            null,
+            userErrors.cannotModifyOwnStatus,
+            HttpStatus.BAD_REQUEST,
+          ),
+        );
+      }
+
+      this.logger.log('Checking if user exists');
+      const user = await this.prismaService.user.findUnique({
+        where: {
+          email: data.email,
+        },
+      });
+
+      if (!user) {
+        this.logger.error('User not found');
+        throw new NotFoundException(
+          ApiResponse.failure(
+            null,
+            agencyErrors.agentNotFound,
+            HttpStatus.NOT_FOUND,
+          ),
+        );
+      }
+
+      this.logger.log('Checking if agent is linked to agency');
+      const { agent } = await this.checkAgentLinked(
+        user.id,
+        data.agencySlug,
+        false,
+        true,
+      );
+
+      this.logger.log('Modifying agent status');
+      await this.prismaService.agent.update({
+        where: {
+          id: agent.id,
+        },
+        data: {
+          agent_status: data.agentStatus,
+        },
+      });
+
+      if (data.role !== ('admin' as role)) {
+        await this.prismaService.user.update({
+          where: {
+            email: data.email,
+          },
+          data: {
+            role: data.role,
+          },
+        });
+      }
+
+      this.logger.log('Storing the activity log');
+      await this.dbLogger.log({
+        action: actions.agent.updated,
+        body: JSON.stringify(data),
+        description: `Agent status modified for ${data.email}`,
         user_id: metadata.user,
         metadata,
       });

@@ -12,12 +12,21 @@ const agencyErrors = {
   agencyDisabled: 'Agency is disabled',
   agentAlreadyLinked: 'Agent is already linked to this agency',
   agentNotFound: 'Agent not found',
+  maxAgentsReached: 'Maximum number of agents reached',
 };
 
 const userErrors = {
   userExists: 'User already exists',
   userNotFound: 'User not found',
   emailExists: 'Email is already taken, please use another email',
+  cannotModifyOwnStatus: 'You cannot modify your own status',
 };
 
-export { authErrors, agencyErrors, userErrors };
+const travelerErrors = {
+  travelerExists: 'Traveler already exists',
+  travelerNotFound: 'Traveler not found',
+  newTravelerContentExists:
+    'Another traveler with the same phone number, email or whatsapp number already exists',
+};
+
+export { authErrors, agencyErrors, userErrors, travelerErrors };

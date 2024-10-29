@@ -10,7 +10,12 @@ import {
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { AuthGuard } from 'guards/jwt.guard';
-import { ICreateUser, IUpdateUser, IUserFilters } from './user.dto';
+import {
+  ICreateUser,
+  IModifyUserStatus,
+  IUpdateUser,
+  IUserFilters,
+} from './user.dto';
 import { Request } from 'express';
 import { Roles } from 'decorators/roles.decorator';
 import { RolesGuard } from 'guards/authorize.guard';
@@ -38,6 +43,13 @@ export class UserController {
   @Roles('admin')
   updateUser(@Body() data: IUpdateUser, @Req() req: Request) {
     return this.userService.updateUser(data, req.metadata);
+  }
+
+  @Put('status')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('admin')
+  ModifyUser(@Body() data: IModifyUserStatus, @Req() req: Request) {
+    return this.userService.modifyUserStatus(data, req.metadata);
   }
 
   @Get('linked')

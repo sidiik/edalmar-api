@@ -1,13 +1,21 @@
+import { agent_status, role } from '@prisma/client';
 import { Transform } from 'class-transformer';
 import {
   IsBoolean,
   IsEmail,
+  IsEnum,
   IsNumber,
   IsNumberString,
   IsOptional,
   IsString,
   MinLength,
 } from 'class-validator';
+
+// agency roles enum
+export enum agency_role {
+  agentManager = 'agent_manager',
+  agent = 'agent',
+}
 
 export class ICreateUser {
   @IsString()
@@ -102,4 +110,32 @@ export class IUserFilters {
   @IsString()
   @IsOptional()
   isSuspended: string;
+}
+
+export class IModifyUserStatus {
+  @IsNumber()
+  id: number;
+
+  @IsBoolean()
+  is2faEnabled: boolean;
+
+  @IsBoolean()
+  isSuspended: boolean;
+
+  @IsEnum(role)
+  role: role;
+}
+
+export class IModifyAgentStatus {
+  @IsString()
+  email: string;
+
+  @IsEnum(agent_status)
+  agentStatus: agent_status;
+
+  @IsString()
+  agencySlug: string;
+
+  @IsEnum(agency_role)
+  role: agency_role;
 }

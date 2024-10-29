@@ -49,6 +49,8 @@ model user {
   session               session[]
   otp                   otp[]
   activity_log          activity_log[]
+
+  @@index([firstname, lastname, email, phone_number, whatsapp_number, role, created_at])
 }
 
 model agency {
@@ -65,8 +67,12 @@ model agency {
   user_lock_minutes    Int?         @default(5)
   user_login_attempts  Int?         @default(5)
   account_lock_enabled Boolean      @default(true)
+  max_agents           Int?         @default(5)
   agent                agent[]
   agency_keys          agency_keys?
+  traveler             traveler[]
+
+  @@index([name, slug, agency_disabled, created_at])
 }
 
 model agent {
@@ -81,6 +87,8 @@ model agent {
   start_hour   Int?
   end_hour     Int?
   agency_keys  agency_keys[]
+
+  @@index([user_id, agency_id, agent_status, created_at])
 }
 
 model agency_keys {
@@ -95,6 +103,8 @@ model agency_keys {
   updated_at          DateTime @updatedAt
   agent               agent?   @relation(fields: [agentId], references: [id])
   agentId             Int?
+
+  @@index([twilio_sid, twilio_auth_token, twilio_phone_number, whatsapp_auth_token])
 }
 
 model session {
@@ -109,6 +119,8 @@ model session {
   ipAddress  String?
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+
+  @@index([user_id, token, expires_at])
 }
 
 model otp {
@@ -120,6 +132,8 @@ model otp {
   expires_at DateTime
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+
+  @@index([user_id, otp, expires_at])
 }
 
 model activity_log {
@@ -133,4 +147,27 @@ model activity_log {
   user_agent  String?
   location    String?
   created_at  DateTime @default(now())
+
+  @@index([user_id, action, created_at])
+}
+
+model traveler {
+  id                    Int       @id @default(autoincrement())
+  first_name            String
+  last_name             String
+  email                 String?
+  phone                 String
+  whatsapp_number       String
+  address               String
+  nationality           String
+  dob                   DateTime?
+  image_url             String?
+  agency_id             Int
+  agency                agency    @relation(fields: [agency_id], references: [id])
+  notifications_enabled Boolean   @default(true)
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
+
+  @@unique([email, phone, whatsapp_number])
+  @@index([email, phone, whatsapp_number, first_name, last_name, notifications_enabled, created_at])
 }
