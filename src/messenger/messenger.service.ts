@@ -91,10 +91,10 @@ export class MessengerService {
                     type: 'text',
                     text: time,
                   },
-                  {
-                    type: 'text',
-                    text: seatNumber,
-                  },
+                  // {
+                  //   type: 'text',
+                  //   text: seatNumber,
+                  // },
                   {
                     type: 'text',
                     text: agencyName,
@@ -146,7 +146,7 @@ export class MessengerService {
           to,
           type: 'template',
           template: {
-            name: 'two_factor_auth',
+            name: 'the2facode',
             language: {
               code: 'en',
             },
@@ -183,6 +183,7 @@ export class MessengerService {
 
       return response.data;
     } catch (error) {
+      console.log('ERROR', JSON.stringify(error));
       this.logger.error(error);
     }
   }
