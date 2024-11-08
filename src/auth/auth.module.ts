@@ -5,10 +5,12 @@ import { PrismaService } from 'src/prisma.service';
 import { MessengerModule } from 'src/messenger/messenger.module';
 import { JwtModule } from '@nestjs/jwt';
 import { jwtConstants } from 'constants/index';
+import { DBLoggerService } from 'src/logger/logger.service';
 
 @Module({
   controllers: [AuthController],
-  providers: [AuthService, PrismaService],
+  providers: [AuthService, PrismaService, DBLoggerService],
+  exports: [AuthService],
   imports: [
     MessengerModule,
     JwtModule.register({

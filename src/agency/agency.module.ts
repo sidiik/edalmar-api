@@ -8,5 +8,6 @@ import { DBLoggerService } from 'src/logger/logger.service';
   controllers: [AgencyController],
   providers: [AgencyService, PrismaService, DBLoggerService],
   imports: [],
+  exports: [AgencyService],
 })
 export class AgencyModule {}

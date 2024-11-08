@@ -1,5 +1,12 @@
+import { otp_reoson } from '@prisma/client';
 import { Transform } from 'class-transformer';
-import { IsEmail, IsNumber, IsString, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsNumber,
+  IsString,
+  MinLength,
+} from 'class-validator';
 
 export class ISignIn {
   @IsEmail()
@@ -20,4 +27,9 @@ export class IVerifyOTP {
 
   @IsNumber()
   identity: number;
+}
+
+export class OTPReason {
+  @IsEnum(otp_reoson)
+  reason: otp_reoson;
 }

@@ -26,6 +26,18 @@ enum agent_status {
   inactive
 }
 
+enum booking_status {
+  pending
+  cancelled
+  confirmed
+}
+
+enum otp_reoson {
+  sign_in
+  password_reset
+  delete_ticket
+}
+
 model user {
   id                    Int            @id @default(autoincrement())
   firstname             String
@@ -71,6 +83,7 @@ model agency {
   agent                agent[]
   agency_keys          agency_keys?
   traveler             traveler[]
+  booking              booking[]
 
   @@index([name, slug, agency_disabled, created_at])
 }
@@ -87,6 +100,7 @@ model agent {
   start_hour   Int?
   end_hour     Int?
   agency_keys  agency_keys[]
+  booking      booking[]
 
   @@index([user_id, agency_id, agent_status, created_at])
 }
@@ -124,14 +138,15 @@ model session {
 }
 
 model otp {
-  id         Int      @id @default(autoincrement())
+  id         Int        @id @default(autoincrement())
   user_id    Int
-  user       user     @relation(fields: [user_id], references: [id])
+  user       user       @relation(fields: [user_id], references: [id])
   otp        String
-  is_active  Boolean  @default(true)
+  reason     otp_reoson @default(sign_in)
+  is_active  Boolean    @default(true)
   expires_at DateTime
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
 
   @@index([user_id, otp, expires_at])
 }
@@ -167,7 +182,56 @@ model traveler {
   notifications_enabled Boolean   @default(true)
   created_at            DateTime  @default(now())
   updated_at            DateTime  @updatedAt
+  booking               booking[]
 
   @@unique([email, phone, whatsapp_number])
   @@index([email, phone, whatsapp_number, first_name, last_name, notifications_enabled, created_at])
+}
+
+model booking {
+  id                  Int            @id @default(autoincrement())
+  booking_description String?
+  traveler_id         Int
+  traveler            traveler       @relation(fields: [traveler_id], references: [id])
+  agent_id            Int
+  agent               agent          @relation(fields: [agent_id], references: [id])
+  agency_id           Int
+  agency              agency         @relation(fields: [agency_id], references: [id])
+  booking_status      booking_status @default(pending)
+  created_at          DateTime       @default(now())
+  updated_at          DateTime       @updatedAt
+  tickets             ticket[]
+
+  @@index([booking_description, traveler_id, agent_id, agency_id, booking_status, created_at])
+}
+
+model ticket {
+  id               Int           @id @default(autoincrement())
+  ticket_reference String
+  booking_id       Int
+  flight_number    String
+  booking          booking       @relation(fields: [booking_id], references: [id])
+  departure_time   DateTime
+  arrival_time     DateTime
+  return_date      DateTime?
+  departure_city   String
+  arrival_city     String
+  created_at       DateTime      @default(now())
+  updated_at       DateTime      @updatedAt
+  ticket_media     ticket_media?
+  is_deleted       Boolean       @default(false)
+
+  @@index([ticket_reference, departure_time, arrival_time, return_date, departure_city, arrival_city])
+}
+
+model ticket_media {
+  id         Int      @id @default(autoincrement())
+  ticket_id  Int      @unique
+  ticket     ticket   @relation(fields: [ticket_id], references: [id])
+  media_url  String
+  key        String?  @unique
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([media_url, created_at])
 }

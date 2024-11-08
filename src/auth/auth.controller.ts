@@ -10,10 +10,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { ISignIn, IVerifyOTP } from './auth.dto';
+import { ISignIn, IVerifyOTP, OTPReason } from './auth.dto';
 import { Response, Request } from 'express';
 import { RefreshGuard } from 'guards/refresh.guard';
 import { AuthGuard } from 'guards/jwt.guard';
+import { role } from '@prisma/client';
+import { Roles } from 'decorators/roles.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -61,5 +63,12 @@ export class AuthController {
   @UseGuards(AuthGuard)
   whoAmI(@Req() req: Request) {
     return this.authService.whoAmI(req.metadata.user);
+  }
+
+  @Post('request-otp')
+  @UseGuards(AuthGuard)
+  @Roles(role.admin, role.agent, role.agent_manager)
+  requestOtp(@Body() data: OTPReason, @Req() req: Request) {
+    return this.authService.requestOTP(data, req.metadata);
   }
 }

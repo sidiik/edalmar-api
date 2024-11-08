@@ -19,4 +19,15 @@ export const actions = {
     updated: 'traveler.updated',
     deleted: 'traveler.deleted',
   },
+
+  booking: {
+    created: 'booking.created',
+    updated: 'booking.updated',
+    deleted: 'booking.deleted',
+  },
+  tickets: {
+    created: 'ticket.created',
+    updated: 'ticket.updated',
+    deleted: 'ticket.deleted',
+  },
 };

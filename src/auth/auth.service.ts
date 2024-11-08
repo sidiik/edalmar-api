@@ -6,7 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
-import { ISignIn } from './auth.dto';
+import { ISignIn, OTPReason } from './auth.dto';
 import { ApiException } from 'helpers/ApiException';
 import { authErrors } from 'constants/errors';
 import * as argon2 from 'argon2';
@@ -14,11 +14,12 @@ import * as dayjs from 'dayjs';
 import { ApiResponse } from 'helpers/ApiResponse';
 import { MessengerService } from 'src/messenger/messenger.service';
 import { otpGenerator } from 'utils';
-import { role, user } from '@prisma/client';
+import { otp_reoson, role, user } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { Response } from 'express';
 import { v4 as uuid } from 'uuid';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { DBLoggerService } from 'src/logger/logger.service';
 
 @Injectable()
 export class AuthService {
@@ -26,8 +27,47 @@ export class AuthService {
     private readonly prismaService: PrismaService,
     private readonly messengerService: MessengerService,
     private readonly jwtService: JwtService,
+    private readonly dbLoggerService: DBLoggerService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
+
+  // Request otp
+  async requestOTP(data: OTPReason, metadata: any) {
+    try {
+      const user = await this.prismaService.user.findUnique({
+        where: {
+          id: metadata.user,
+        },
+      });
+
+      if (!user) {
+        throw new UnauthorizedException(authErrors.invalidCredentials);
+      }
+
+      if (user.is_suspended) {
+        throw new UnauthorizedException(authErrors.accout_suspended);
+      }
+
+      // log the request
+      await this.dbLoggerService.log({
+        action: 'user.request_otp',
+        description: 'User requested for OTP',
+        body: JSON.stringify(data),
+        metadata,
+        user_id: metadata.user,
+      });
+
+      return this.sendOtpMessage({
+        agencyName: '',
+        authToken: process.env.AUTH_TOKEN,
+        phoneNumberId: process.env.PHONE_NUMBER_ID,
+        user,
+        reason: data.reason,
+      });
+    } catch (error) {
+      throw new ApiException(error.response, error.status);
+    }
+  }
 
   async whoAmI(user_id: number) {
     try {
@@ -97,6 +137,10 @@ export class AuthService {
           },
         });
 
+        if (!agent) {
+          throw new UnauthorizedException(authErrors.invalidCredentials);
+        }
+
         let login_attempts = user.login_attempts;
 
         if (user.lock_until && dayjs().isBefore(user.lock_until)) {
@@ -120,7 +164,7 @@ export class AuthService {
 
         if (!is_password_valid) {
           login_attempts = login_attempts + 1;
-          if (agent.agency.account_lock_enabled) {
+          if (agent?.agency?.account_lock_enabled) {
             await this.prismaService.user.update({
               where: {
                 id: user.id,
@@ -154,8 +198,8 @@ export class AuthService {
           return this.sendOtpMessage({
             user,
             agencyName: agent.agency.name,
-            sid: agent.agency.agency_keys.twilio_sid,
-            authToken: agent.agency.agency_keys.twilio_auth_token,
+            authToken: process.env.AUTH_TOKEN,
+            phoneNumberId: process.env.PHONE_NUMBER_ID,
           });
         }
 
@@ -236,9 +280,9 @@ export class AuthService {
       if (user.is_2fa_enabled) {
         return this.sendOtpMessage({
           user,
-          agencyName: process.env.DEFAULT_AGENCY_NAME,
-          sid: process.env.DEFAULT_SID,
-          authToken: process.env.DEFAULT_AUTH_TOKEN,
+          agencyName: '',
+          phoneNumberId: process.env.PHONE_NUMBER_ID,
+          authToken: process.env.AUTH_TOKEN,
         });
       }
 
@@ -268,6 +312,7 @@ export class AuthService {
         is2faEnabled: false,
       });
     } catch (error) {
+      console.log(error);
       throw new ApiException(error.response, error.status);
     }
   }
@@ -319,14 +364,15 @@ export class AuthService {
   // Send OTP message and store it
   async sendOtpMessage({
     user,
-    agencyName,
-    sid,
+    phoneNumberId,
     authToken,
+    reason,
   }: {
     user: user;
     agencyName: string;
-    sid: string;
+    phoneNumberId: string;
     authToken: string;
+    reason?: string;
   }) {
     try {
       // Check for existing token
@@ -348,16 +394,15 @@ export class AuthService {
           otp,
           user_id: user.id,
           expires_at: dayjs().add(5, 'minute').toDate(),
+          reason: (reason as otp_reoson) || otp_reoson.sign_in,
         },
       });
-      this.messengerService.sendWaMessage(
-        '14155238886',
-        user.whatsapp_number,
-        `Dear ${user.firstname} ${user.lastname}, Your OTP code is ${otp}. It expires in 5 minutes. Do not share this code with anyone.`,
-        agencyName,
-        sid,
+      await this.messengerService.sendWAOTPMessage({
         authToken,
-      );
+        code: otp,
+        to: user.whatsapp_number,
+        phoneNumberId,
+      });
 
       return new ApiResponse({ is2faEnabled: true, identity: user.id });
     } catch (error) {
@@ -366,13 +411,19 @@ export class AuthService {
   }
 
   // Verify OTP
-  async verifyToken(user: user, token?: string, ignore?: boolean) {
+  async verifyToken(
+    user: user,
+    token?: string,
+    ignore?: boolean,
+    reason?: otp_reoson,
+  ) {
     try {
       const otp = await this.prismaService.otp.findFirst({
         where: {
           otp: token || undefined,
-          user_id: user.id,
+          user_id: user?.id,
           is_active: true,
+          reason: reason || otp_reoson.sign_in,
           expires_at: {
             gt: dayjs().toDate(),
           },

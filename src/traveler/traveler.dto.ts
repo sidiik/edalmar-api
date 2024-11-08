@@ -1,6 +1,8 @@
+import { Transform } from 'class-transformer';
 import {
   IsBoolean,
   IsDate,
+  IsDateString,
   IsNumber,
   IsOptional,
   IsString,
@@ -29,7 +31,7 @@ export class ICreateTraveler {
   @MinLength(9)
   whatsappNumber: string;
 
-  @IsDate()
+  @IsDateString()
   @IsOptional()
   dob: string;
 
@@ -40,6 +42,7 @@ export class ICreateTraveler {
   nationality: string;
 
   @IsBoolean()
+  @IsOptional()
   notificationsEnabled: boolean;
 }
 
@@ -83,10 +86,40 @@ export class IUpdateTraveler {
 }
 
 export class IListTravelersFilters {
-    @IsString()
-    agencySlug: string;
+  @IsString()
+  agencySlug: string;
 
-    @IsString()
-    @IsOptional()
+  @IsOptional()
+  @IsNumber()
+  @Transform(({ value }) => Math.max(1, parseInt(value)))
+  page: number = 1;
 
+  @IsOptional()
+  @IsNumber()
+  @Transform(({ value }) => Math.max(1, parseInt(value)))
+  size: number = 5;
+
+  @IsString()
+  @IsOptional()
+  firstname: string;
+
+  @IsString()
+  @IsOptional()
+  lastname: string;
+
+  @IsString()
+  @IsOptional()
+  phoneNumber: string;
+
+  @IsString()
+  @IsOptional()
+  whatsappNumber: string;
+
+  @IsString()
+  @IsOptional()
+  startDate: string;
+
+  @IsString()
+  @IsOptional()
+  endDate: string;
 }

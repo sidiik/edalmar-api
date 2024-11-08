@@ -8,7 +8,8 @@ const authErrors = {
 
 const agencyErrors = {
   agencyExists: 'Agency already exists',
-  agencyNotFound: 'Agency not found',
+  agencyNotFound:
+    'This agency is either disabled or does not exist, Please contact support',
   agencyDisabled: 'Agency is disabled',
   agentAlreadyLinked: 'Agent is already linked to this agency',
   agentNotFound: 'Agent not found',
@@ -27,6 +28,11 @@ const travelerErrors = {
   travelerNotFound: 'Traveler not found',
   newTravelerContentExists:
     'Another traveler with the same phone number, email or whatsapp number already exists',
+  bookingNotFound: 'Booking not found',
+  ticketNotFound: 'Ticket not found',
+  ticketNotInRecycleBin: 'Ticket is not in the recycle bin',
+  invalidOperation: 'Invalid operation',
+  ticketInRecycleBin: 'Ticket is already in the recycle bin',
 };
 
 export { authErrors, agencyErrors, userErrors, travelerErrors };

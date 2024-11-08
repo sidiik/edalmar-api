@@ -425,10 +425,10 @@ export class AgencyService {
 
   // Check if a user is linked to an agency
   /**
-   ** userId: This is the user id to check if the user is linked to an agency, this is required
-   ** agencySlug: This is the agency slug to check if the user is linked to, this is required
-   ** isCurrentUser: This is a boolean to check if the user is the current user, this is optional and defaults to true
-   ** silent: This is a boolean to check if the function should throw an error or not, if the agent is inactive, this is optional and defaults to false
+   * @param userId: This is the user id to check if the user is linked to an agency, this is required
+   * @param agencySlug: This is the agency slug to check if the user is linked to, this is required
+   * @param isCurrentUser: This is a boolean to check if the user is the current user, this is optional and defaults to true
+   * @param silent: This is a boolean to check if the function should throw an error or not, if the agent is inactive, this is optional and defaults to false
    */
   async checkAgentLinked(
     userId: number,
@@ -452,10 +452,6 @@ export class AgencyService {
         );
       }
 
-      if (user.role === role.admin && isCurrentUser) {
-        return { user };
-      }
-
       const agent = await this.prismaService.agent.findFirst({
         where: {
           user_id: userId,
@@ -464,6 +460,10 @@ export class AgencyService {
           },
         },
       });
+
+      if (user.role === role.admin && isCurrentUser) {
+        return { user, agent };
+      }
 
       if (!agent) {
         this.logger.error("Agent isn't linked to the agency");
@@ -489,6 +489,29 @@ export class AgencyService {
       return { user, agent };
     } catch (error) {
       throw new ApiException(error.response, error.status);
+    }
+  }
+
+  /***
+   * Checks if an agency is disabled
+   * @param agencySlug: This is the agency slug to check if the agency is disabled
+   * @param silent: This is a boolean to check if the function should throw an error or not, this is optional and defaults to false
+   */
+  async checkAgencyDisabled(agencySlug: string, silent: boolean = false) {
+    const agency = await this.prismaService.agency.findFirst({
+      where: {
+        slug: agencySlug,
+      },
+    });
+
+    if (!agency || (agency?.agency_disabled && !silent)) {
+      throw new BadRequestException(
+        ApiResponse.failure(
+          null,
+          agencyErrors.agencyNotFound,
+          HttpStatus.BAD_REQUEST,
+        ),
+      );
     }
   }
 

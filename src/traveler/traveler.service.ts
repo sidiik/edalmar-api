@@ -1,20 +1,24 @@
-import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import {
   ConflictException,
   HttpStatus,
-  Inject,
   Injectable,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { DBLoggerService } from 'src/logger/logger.service';
 import { PrismaService } from 'src/prisma.service';
-import { ICreateTraveler, IUpdateTraveler } from './traveler.dto';
+import {
+  ICreateTraveler,
+  IListTravelersFilters,
+  IUpdateTraveler,
+} from './traveler.dto';
 import { AgencyService } from 'src/agency/agency.service';
 import { ApiResponse } from 'helpers/ApiResponse';
 import { travelerErrors } from 'constants/index';
 import { actions } from 'constants/actions';
 import { ApiException } from 'helpers/ApiException';
+import { Prisma } from '@prisma/client';
+import * as dayjs from 'dayjs';
 
 @Injectable()
 export class TravelerService {
@@ -30,6 +34,9 @@ export class TravelerService {
     try {
       this.logger.log('Checking if the user is linked to an agency');
       await this.agencyService.checkAgentLinked(metadata.user, data.agencySlug);
+
+      this.logger.log("Checking if agency is disabled or doesn't exist");
+      await this.agencyService.checkAgencyDisabled(data.agencySlug);
 
       this.logger.log(
         'Checking if traveler exists via phone, email or whatsapp',
@@ -75,7 +82,7 @@ export class TravelerService {
           },
           notifications_enabled: data.notificationsEnabled,
           address: data.address,
-          dob: data.dob,
+          dob: dayjs(data.dob).toDate(),
         },
       });
 
@@ -87,12 +94,13 @@ export class TravelerService {
         action: actions.traveler.created,
         description: `Traveler ${newTraveler.first_name} ${newTraveler.last_name} created`,
         body: JSON.stringify(data),
-        metadata: JSON.stringify(metadata),
-        user_id: metadata.user.id,
+        metadata: metadata,
+        user_id: metadata.user,
       });
 
       return ApiResponse.success(newTraveler);
     } catch (error) {
+      console.log(error);
       this.logger.error(error);
       throw new ApiException(error.response, error.status);
     }
@@ -103,6 +111,9 @@ export class TravelerService {
     try {
       this.logger.log('Checking if the user is linked to an agency');
       await this.agencyService.checkAgentLinked(metadata.user, data.agencySlug);
+
+      this.logger.log("Checking if agency is disabled or doesn't exist");
+      await this.agencyService.checkAgencyDisabled(data.agencySlug);
 
       this.logger.log('Checking if traveler exists');
       const traveler = await this.prismaService.traveler.findFirst({
@@ -169,7 +180,7 @@ export class TravelerService {
           phone: data.phone,
           whatsapp_number: data.whatsappNumber,
           address: data.address,
-          dob: data.dob,
+          dob: dayjs(data.dob).toDate(),
           notifications_enabled: data.notificationsEnabled,
           nationality: data.nationality,
         },
@@ -182,8 +193,8 @@ export class TravelerService {
         action: actions.traveler.updated,
         description: `Traveler ${updatedTraveler.first_name} ${updatedTraveler.last_name} updated`,
         body: JSON.stringify(data),
-        metadata: JSON.stringify(metadata),
-        user_id: metadata.user.id,
+        metadata: metadata,
+        user_id: metadata.user,
       });
 
       return ApiResponse.success(updatedTraveler);
@@ -224,6 +235,87 @@ export class TravelerService {
       return ApiResponse.success(traveler);
     } catch (error) {
       this.logger.error(error);
+      throw new ApiException(error.response, error.status);
+    }
+  }
+
+  async listTravelers(filters: IListTravelersFilters, metadata: any) {
+    try {
+      this.logger.log("Checking if agency is disabled or doesn't exist");
+      await this.agencyService.checkAgencyDisabled(filters.agencySlug);
+
+      this.logger.log('Checking if the user is linked to an agency');
+      await this.agencyService.checkAgentLinked(
+        metadata.user,
+        filters.agencySlug,
+      );
+
+      const { page, size } = filters;
+      const skip = (page - 1) * size;
+
+      this.logger.log('Fetching travelers');
+      const whereClause = {
+        agency: !filters.agencySlug
+          ? undefined
+          : {
+              slug: filters.agencySlug,
+            },
+
+        first_name: !filters.firstname
+          ? undefined
+          : {
+              contains: filters.firstname,
+              mode: Prisma.QueryMode.insensitive,
+            },
+        last_name: !filters.lastname
+          ? undefined
+          : {
+              contains: filters.lastname,
+              mode: Prisma.QueryMode.insensitive,
+            },
+        phone: !filters.phoneNumber
+          ? undefined
+          : {
+              contains: filters.phoneNumber,
+              mode: Prisma.QueryMode.insensitive,
+            },
+        whatsapp_number: !filters.whatsappNumber
+          ? undefined
+          : {
+              contains: filters.whatsappNumber,
+              mode: Prisma.QueryMode.insensitive,
+            },
+
+        created_at: {
+          gte: !filters.startDate
+            ? undefined
+            : dayjs(filters.startDate).toDate(),
+          lte: !filters.endDate
+            ? undefined
+            : dayjs(filters.endDate).endOf('day').toDate(),
+        },
+      };
+      const travelers = await this.prismaService.traveler.findMany({
+        where: whereClause,
+        skip,
+        take: size,
+      });
+
+      const totalCount = await this.prismaService.traveler.count({
+        where: whereClause,
+      });
+
+      const totalPages = Math.ceil(totalCount / size);
+
+      this.logger.log('Travelers fetched successfully');
+      return ApiResponse.success({
+        data: travelers,
+        totalCount,
+        page,
+        size,
+        totalPages,
+      });
+    } catch (error) {
       throw new ApiException(error.response, error.status);
     }
   }

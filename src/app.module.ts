@@ -9,6 +9,8 @@ import * as redisStore from 'cache-manager-redis-store';
 import { CacheModule } from '@nestjs/cache-manager';
 import { UserModule } from './user/user.module';
 import { TravelerModule } from './traveler/traveler.module';
+import { BookingModule } from './booking/booking.module';
+import { TicketModule } from './ticket/ticket.module';
 
 @Module({
   imports: [
@@ -29,6 +31,8 @@ import { TravelerModule } from './traveler/traveler.module';
     }),
     UserModule,
     TravelerModule,
+    BookingModule,
+    TicketModule,
   ],
   controllers: [],
   providers: [],
