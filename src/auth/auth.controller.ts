@@ -67,7 +67,7 @@ export class AuthController {
 
   @Post('request-otp')
   @UseGuards(AuthGuard)
-  @Roles(role.admin, role.agent, role.agent_manager)
+  @Roles(role.admin, role.agent_user, role.customer)
   requestOtp(@Body() data: OTPReason, @Req() req: Request) {
     return this.authService.requestOTP(data, req.metadata);
   }

@@ -32,35 +32,35 @@ export class TicketController {
 
   @Post('create')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(role.admin, role.agent, role.agent_manager)
+  @Roles(role.admin, role.agent_user)
   async createTicket(@Body() data: ICreateTicket, @Req() req: Request) {
     return this.ticketService.createTicket(data, req.metadata);
   }
 
   @Put('update')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(role.admin, role.agent, role.agent_manager)
+  @Roles(role.admin, role.agent_user)
   async updateTicket(@Body() data: IUpdateTickets, @Req() req: Request) {
     return this.ticketService.updateTicket(data, req.metadata);
   }
 
   @Post('remove')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(role.admin, role.agent, role.agent_manager)
+  @Roles(role.admin, role.agent_user)
   async removeTicket(@Body() data: IRemoveTicket, @Req() req: Request) {
     return this.ticketService.removeTicket(data, req.metadata);
   }
 
   @Get('list')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(role.admin, role.agent, role.agent_manager)
+  @Roles(role.admin, role.agent_user)
   async listTickets(@Query() filters: ITicketListFilters, @Req() req: Request) {
     return this.ticketService.listTickets(filters, req.metadata);
   }
 
   @Post('upload')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(role.admin, role.agent, role.agent_manager)
+  @Roles(role.admin, role.agent_user)
   @UseInterceptors(FileInterceptor('file'))
   async uploadTicketFile(
     @UploadedFile() file: Express.Multer.File,
@@ -72,7 +72,7 @@ export class TicketController {
 
   @Post('message')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(role.admin, role.agent, role.agent_manager)
+  @Roles(role.admin, role.agent_user)
   async sendMessage(@Body() data: IMessageTicket, @Req() req: Request) {
     return this.ticketService.messageTicket(data, req.metadata);
   }

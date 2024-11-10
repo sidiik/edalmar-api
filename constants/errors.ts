@@ -14,6 +14,8 @@ const agencyErrors = {
   agentAlreadyLinked: 'Agent is already linked to this agency',
   agentNotFound: 'Agent not found',
   maxAgentsReached: 'Maximum number of agents reached',
+  agentInsufficientPermissions:
+    'You do not have the required permissions to perform this operation',
 };
 
 const userErrors = {

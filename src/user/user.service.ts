@@ -18,7 +18,7 @@ import { userErrors } from 'constants/index';
 import { ApiResponse } from 'helpers/ApiResponse';
 import * as argon2 from 'argon2';
 import { actions } from 'constants/actions';
-import { role } from '@prisma/client';
+import { role, user } from '@prisma/client';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 
 @Injectable()
@@ -248,15 +248,23 @@ export class UserService {
   }
 
   // List my linked agencies
-  async listMyLinkedAgencies(userId: number) {
+  async listMyLinkedAgencies(metadata: any) {
     try {
+      // Check is this user admin from cache, if so set isAdmin to true
+      const user = (await this.cacheManager.get(
+        'USER-' + metadata.user,
+      )) as user;
+      const isAdmin = user.role === role.admin;
+
       const agencies = await this.prismaService.agency.findMany({
         where: {
-          agent: {
-            some: {
-              user_id: userId,
-            },
-          },
+          agent: isAdmin
+            ? undefined
+            : {
+                some: {
+                  user_id: metadata.user,
+                },
+              },
         },
         select: {
           id: true,
@@ -270,9 +278,10 @@ export class UserService {
               agent_status: true,
               start_hour: true,
               end_hour: true,
+              role: true,
             },
             where: {
-              user_id: userId,
+              user_id: metadata.user,
             },
           },
         },
@@ -282,6 +291,7 @@ export class UserService {
         data: agencies,
       });
     } catch (error) {
+      console.log(error);
       throw new ApiException(error.response, error.status);
     }
   }

@@ -17,7 +17,7 @@ import { ApiResponse } from 'helpers/ApiResponse';
 import { travelerErrors } from 'constants/index';
 import { actions } from 'constants/actions';
 import { ApiException } from 'helpers/ApiException';
-import { Prisma } from '@prisma/client';
+import { agent_role, Prisma } from '@prisma/client';
 import * as dayjs from 'dayjs';
 
 @Injectable()
@@ -33,7 +33,11 @@ export class TravelerService {
   async createTraveler(data: ICreateTraveler, metadata: any) {
     try {
       this.logger.log('Checking if the user is linked to an agency');
-      await this.agencyService.checkAgentLinked(metadata.user, data.agencySlug);
+      await this.agencyService.checkAgentLinked(
+        metadata.user,
+        data.agencySlug,
+        [agent_role.admin, agent_role.editor],
+      );
 
       this.logger.log("Checking if agency is disabled or doesn't exist");
       await this.agencyService.checkAgencyDisabled(data.agencySlug);
@@ -110,7 +114,11 @@ export class TravelerService {
   async updateTraveler(data: IUpdateTraveler, metadata: any) {
     try {
       this.logger.log('Checking if the user is linked to an agency');
-      await this.agencyService.checkAgentLinked(metadata.user, data.agencySlug);
+      await this.agencyService.checkAgentLinked(
+        metadata.user,
+        data.agencySlug,
+        [agent_role.admin, agent_role.editor],
+      );
 
       this.logger.log("Checking if agency is disabled or doesn't exist");
       await this.agencyService.checkAgencyDisabled(data.agencySlug);
@@ -208,7 +216,10 @@ export class TravelerService {
   async getTraveler(travelerId: number, agencySlug: string, metadata: any) {
     try {
       this.logger.log('Checking if the user is linked to an agency');
-      await this.agencyService.checkAgentLinked(metadata.user, agencySlug);
+      await this.agencyService.checkAgentLinked(metadata.user, agencySlug, [
+        agent_role.admin,
+        agent_role.editor,
+      ]);
 
       this.logger.log('Checking if traveler exists');
       const traveler = await this.prismaService.traveler.findFirst({
@@ -248,6 +259,7 @@ export class TravelerService {
       await this.agencyService.checkAgentLinked(
         metadata.user,
         filters.agencySlug,
+        [agent_role.admin, agent_role.editor],
       );
 
       const { page, size } = filters;

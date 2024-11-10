@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   HttpStatus,
   Inject,
   Injectable,
@@ -23,7 +24,7 @@ import { ApiResponse } from 'helpers/ApiResponse';
 import { Request } from 'express';
 import { actions } from 'constants/actions';
 import { DBLoggerService } from 'src/logger/logger.service';
-import { Prisma, role, user } from '@prisma/client';
+import { agent_role, Prisma, role, user } from '@prisma/client';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import * as argon2 from 'argon2';
 import { IModifyAgentStatus } from 'src/user/user.dto';
@@ -304,7 +305,7 @@ export class AgencyService {
         },
       });
 
-      if (user.role !== role.admin && user.role !== role.agent_manager) {
+      if (user.role !== role.admin) {
         // Update user role to agent
         this.logger.log('Updating user role to agent');
         await this.prismaService.user.update({
@@ -312,7 +313,7 @@ export class AgencyService {
             email: data.email,
           },
           data: {
-            role: 'agent',
+            role: 'agent_user',
           },
         });
       }
@@ -335,7 +336,8 @@ export class AgencyService {
   // Get all agents linked to an agency
   async getAgents(slug: string, metadata: any) {
     try {
-      await this.checkAgentLinked(metadata.user, slug);
+      await this.checkAgentLinked(metadata.user, slug, [agent_role.admin]);
+
       const agents = await this.prismaService.agent.findMany({
         where: {
           agency: {
@@ -355,6 +357,7 @@ export class AgencyService {
               is_2fa_enabled: true,
               is_suspended: true,
               profile_url: true,
+              whatsapp_number: true,
             },
           },
         },
@@ -433,6 +436,7 @@ export class AgencyService {
   async checkAgentLinked(
     userId: number,
     agencySlug: string,
+    requiredRoles: string[],
     isCurrentUser: boolean = true,
     silent: boolean = false,
   ) {
@@ -476,12 +480,14 @@ export class AgencyService {
         );
       }
 
-      if (agent?.agent_status === 'inactive' && !silent) {
-        throw new NotFoundException(
+      const hasRequiredRole = requiredRoles.includes(agent.role);
+
+      if ((agent?.agent_status === 'inactive' || !hasRequiredRole) && !silent) {
+        throw new ForbiddenException(
           ApiResponse.failure(
             null,
-            agencyErrors.agentNotFound,
-            HttpStatus.NOT_FOUND,
+            agencyErrors.agentInsufficientPermissions,
+            HttpStatus.FORBIDDEN,
           ),
         );
       }
@@ -521,7 +527,9 @@ export class AgencyService {
       this.logger.log(
         'Checking if agent is linked to agency ' + data.agencySlug,
       );
-      await this.checkAgentLinked(metadata.user, data.agencySlug);
+      await this.checkAgentLinked(metadata.user, data.agencySlug, [
+        agent_role.admin,
+      ]);
 
       const user = await this.prismaService.user.findFirst({
         where: {
@@ -541,7 +549,12 @@ export class AgencyService {
       }
 
       this.logger.log('Check if the user is linked to the agency');
-      await this.checkAgentLinked(user.id, data.agencySlug, false);
+      await this.checkAgentLinked(
+        user.id,
+        data.agencySlug,
+        [agent_role.admin, agent_role.editor, agent_role.user],
+        false,
+      );
 
       this.logger.log('Resetting agent password');
       await this.prismaService.user.update({
@@ -575,6 +588,7 @@ export class AgencyService {
       const agentManager = await this.checkAgentLinked(
         metadata.user,
         data.agencySlug,
+        [agent_role.admin],
       );
 
       this.logger.log("Checking if agent is the current user's account");
@@ -610,6 +624,7 @@ export class AgencyService {
       const { agent } = await this.checkAgentLinked(
         user.id,
         data.agencySlug,
+        [agent_role.admin, agent_role.editor, agent_role.user],
         false,
         true,
       );
@@ -621,19 +636,9 @@ export class AgencyService {
         },
         data: {
           agent_status: data.agentStatus,
+          role: data.role,
         },
       });
-
-      if (data.role !== ('admin' as role)) {
-        await this.prismaService.user.update({
-          where: {
-            email: data.email,
-          },
-          data: {
-            role: data.role,
-          },
-        });
-      }
 
       this.logger.log('Storing the activity log');
       await this.dbLogger.log({

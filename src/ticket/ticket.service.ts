@@ -20,7 +20,7 @@ import {
 import { ApiResponse } from 'helpers/ApiResponse';
 import { travelerErrors } from 'constants/index';
 import { AgencyService } from 'src/agency/agency.service';
-import { otp_reoson, Prisma, user } from '@prisma/client';
+import { agent_role, otp_reoson, Prisma, user } from '@prisma/client';
 import { actions } from 'constants/actions';
 import { ApiException } from 'helpers/ApiException';
 import * as dayjs from 'dayjs';
@@ -53,7 +53,11 @@ export class TicketService {
 
       // Check if agent is linked to agency
       this.logger.log('Checking if agent is linked to agency');
-      await this.agencyService.checkAgentLinked(metadata.user, data.agencySlug);
+      await this.agencyService.checkAgentLinked(
+        metadata.user,
+        data.agencySlug,
+        [agent_role.admin, agent_role.editor],
+      );
 
       // Check if booking exists
       this.logger.log('Checking if booking exists');
@@ -125,7 +129,11 @@ export class TicketService {
 
       // Check if agent is linked to agency
       this.logger.log('Checking if agent is linked to agency');
-      await this.agencyService.checkAgentLinked(metadata.user, data.agencySlug);
+      await this.agencyService.checkAgentLinked(
+        metadata.user,
+        data.agencySlug,
+        [agent_role.admin, agent_role.editor],
+      );
 
       // Check if booking exists
       this.logger.log('Checking if booking exists');
@@ -194,7 +202,11 @@ export class TicketService {
 
       // Check if agent is linked to agency
       this.logger.log('Checking if agent is linked to agency');
-      await this.agencyService.checkAgentLinked(metadata.user, data.agencySlug);
+      await this.agencyService.checkAgentLinked(
+        metadata.user,
+        data.agencySlug,
+        [agent_role.admin, agent_role.editor],
+      );
 
       if (data.moveToRecycleBin === data.restoreFromRecycleBin) {
         this.logger.warn('Invalid operation');
@@ -302,6 +314,7 @@ export class TicketService {
       await this.agencyService.checkAgentLinked(
         metadata.user,
         filters.agencySlug,
+        [agent_role.admin, agent_role.editor],
       );
 
       const { page, size } = filters;
@@ -353,7 +366,11 @@ export class TicketService {
 
       // Check if agent is linked to agency
       this.logger.log('Checking if agent is linked to agency');
-      await this.agencyService.checkAgentLinked(metadata.user, data.agencySlug);
+      await this.agencyService.checkAgentLinked(
+        metadata.user,
+        data.agencySlug,
+        [agent_role.admin],
+      );
 
       // Check if the code is valid
       this.logger.log('Checking if code is valid');
@@ -424,7 +441,11 @@ export class TicketService {
 
       // Check if agent is linked to agency
       this.logger.log('Checking if agent is linked to agency');
-      await this.agencyService.checkAgentLinked(metadata.user, data.agencySlug);
+      await this.agencyService.checkAgentLinked(
+        metadata.user,
+        data.agencySlug,
+        [agent_role.admin, agent_role.editor],
+      );
 
       // Check if the ticket exists
       this.logger.log('Checking if ticket exists');
@@ -546,7 +567,11 @@ export class TicketService {
 
       // Check if the agent is linked to the agency
       this.logger.log('Checking if agent is linked to agency');
-      await this.agencyService.checkAgentLinked(metadata.user, data.agencySlug);
+      await this.agencyService.checkAgentLinked(
+        metadata.user,
+        data.agencySlug,
+        [agent_role.admin, agent_role.editor],
+      );
 
       // Check if the ticket exists
       this.logger.log('Checking if ticket exists');

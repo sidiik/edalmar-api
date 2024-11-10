@@ -17,7 +17,7 @@ import { AgencyService } from 'src/agency/agency.service';
 import { ApiResponse } from 'helpers/ApiResponse';
 import { travelerErrors } from 'constants/';
 import { actions } from 'constants/actions';
-import { Prisma } from '@prisma/client';
+import { agent_role, Prisma } from '@prisma/client';
 
 @Injectable()
 export class BookingService {
@@ -39,6 +39,7 @@ export class BookingService {
       const { agent } = await this.agencyService.checkAgentLinked(
         metadata.user,
         data.agencySlug,
+        [agent_role.admin, agent_role.editor],
       );
 
       //   Check if the traveler exists
@@ -109,7 +110,11 @@ export class BookingService {
 
       // Check if the user is linked to an agency
       this.logger.log('Checking if the user is linked to an agency');
-      await this.agencyService.checkAgentLinked(metadata.user, data.agencySlug);
+      await this.agencyService.checkAgentLinked(
+        metadata.user,
+        data.agencySlug,
+        [agent_role.admin, agent_role.editor],
+      );
 
       //   Check if the traveler exists
       this.logger.log('Checking if traveler exists via id');
@@ -193,6 +198,7 @@ export class BookingService {
       await this.agencyService.checkAgentLinked(
         metadata.user,
         filters.agencySlug,
+        [agent_role.admin, agent_role.editor],
       );
 
       const { page, size } = filters;
@@ -267,6 +273,7 @@ export class BookingService {
       await this.agencyService.checkAgentLinked(
         metadata.user,
         filters.agencySlug,
+        [agent_role.admin, agent_role.editor],
       );
 
       //   Check if the booking exists

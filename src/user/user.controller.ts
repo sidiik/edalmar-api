@@ -55,6 +55,6 @@ export class UserController {
   @Get('linked')
   @UseGuards(AuthGuard)
   listLinkedAgencies(@Req() req: Request) {
-    return this.userService.listMyLinkedAgencies(req.metadata.user);
+    return this.userService.listMyLinkedAgencies(req.metadata);
   }
 }

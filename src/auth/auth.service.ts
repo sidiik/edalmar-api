@@ -82,6 +82,9 @@ export class AuthService {
           where: {
             id: user_id,
           },
+          include: {
+            agent: true,
+          },
         });
 
       if (!rest) {
@@ -115,10 +118,7 @@ export class AuthService {
         throw new UnauthorizedException(authErrors.accout_suspended);
       }
 
-      if (
-        (user.role === role.agent || user.role === role.agent_manager) &&
-        data.agency_slug
-      ) {
+      if (user.role === role.agent_user && data.agency_slug) {
         const agent = await this.prismaService.agent.findFirst({
           where: {
             agency: {
@@ -224,6 +224,15 @@ export class AuthService {
           metadata.clientIp,
           metadata.deviceId,
         );
+
+        // log the request
+        await this.dbLoggerService.log({
+          action: 'user.signin',
+          description: 'User signed in',
+          body: JSON.stringify({ ...data, password: '********' }),
+          metadata,
+          user_id: user.id,
+        });
 
         return new ApiResponse({
           is2faEnabled: false,
@@ -482,6 +491,15 @@ export class AuthService {
       });
 
       const { access_token, refresh_token } = await this.generateTokens(user);
+      // log the request
+      await this.dbLoggerService.log({
+        action: 'user.signin',
+        description: 'User signed in',
+        body: JSON.stringify({ userId: user.id, otp: '********' }),
+        metadata,
+        user_id: user.id,
+      });
+
       await this.storeTokensInCookie(
         res,
         access_token,

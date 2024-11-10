@@ -1,4 +1,4 @@
-import { agent_status, role } from '@prisma/client';
+import { agent_role, agent_status, role } from '@prisma/client';
 import { Transform } from 'class-transformer';
 import {
   IsBoolean,
@@ -10,12 +10,6 @@ import {
   IsString,
   MinLength,
 } from 'class-validator';
-
-// agency roles enum
-export enum agency_role {
-  agentManager = 'agent_manager',
-  agent = 'agent',
-}
 
 export class ICreateUser {
   @IsString()
@@ -136,6 +130,6 @@ export class IModifyAgentStatus {
   @IsString()
   agencySlug: string;
 
-  @IsEnum(agency_role)
-  role: agency_role;
+  @IsEnum(agent_role)
+  role: agent_role;
 }

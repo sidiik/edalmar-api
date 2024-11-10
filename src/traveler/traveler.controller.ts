@@ -18,6 +18,7 @@ import {
   IUpdateTraveler,
 } from './traveler.dto';
 import { Request } from 'express';
+import { role } from '@prisma/client';
 
 @Controller('traveler')
 export class TravelerController {
@@ -25,21 +26,21 @@ export class TravelerController {
 
   @Post('create')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('admin', 'agent', 'agent_manager')
+  @Roles(role.admin, role.agent_user)
   async createTraveler(@Body() data: ICreateTraveler, @Req() req: Request) {
     return await this.travelerService.createTraveler(data, req.metadata);
   }
 
   @Put('update')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('admin', 'agent', 'agent_manager')
+  @Roles(role.admin, role.agent_user)
   async updateTraveler(@Body() data: IUpdateTraveler, @Req() req: Request) {
     return await this.travelerService.updateTraveler(data, req.metadata);
   }
 
   @Get('list')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('admin', 'agent', 'agent_manager')
+  @Roles(role.admin, role.agent_user)
   async listTravelers(
     @Query() data: IListTravelersFilters,
     @Req() req: Request,

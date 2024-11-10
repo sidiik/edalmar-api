@@ -15,9 +15,14 @@ datasource db {
 
 enum role {
   admin
-  agent_manager
-  agent
+  agent_user
   customer
+  user
+}
+
+enum agent_role {
+  admin
+  editor
   user
 }
 
@@ -94,6 +99,7 @@ model agent {
   user_id      Int
   user         user          @relation(fields: [user_id], references: [id])
   agency       agency        @relation(fields: [agency_id], references: [id])
+  role         agent_role    @default(user)
   agency_id    Int
   created_at   DateTime      @default(now())
   updated_at   DateTime      @updatedAt

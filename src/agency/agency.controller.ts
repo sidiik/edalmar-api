@@ -59,14 +59,14 @@ export class AgencyController {
 
   @Get('list-agents/:agencySlug')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(role.admin, role.agent_manager)
+  @Roles(role.admin, role.agent_user)
   listAgents(@Param('agencySlug') agencySlug: string, @Req() req: Request) {
     return this.agencyService.getAgents(agencySlug, req.metadata);
   }
 
   @Put('modify-agent-status')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(role.admin, role.agent_manager)
+  @Roles(role.admin, role.agent_user)
   modifyAgentStatus(@Body() data: IModifyAgentStatus, @Req() req: Request) {
     return this.agencyService.modifyAgentStatus(data, req.metadata);
   }
