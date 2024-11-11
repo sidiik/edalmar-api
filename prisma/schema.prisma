@@ -190,7 +190,7 @@ model traveler {
   updated_at            DateTime  @updatedAt
   booking               booking[]
 
-  @@unique([email, phone, whatsapp_number])
+  @@unique([email, phone, whatsapp_number, agency_id])
   @@index([email, phone, whatsapp_number, first_name, last_name, notifications_enabled, created_at])
 }
 

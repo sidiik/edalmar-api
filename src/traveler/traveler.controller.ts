@@ -14,6 +14,7 @@ import { RolesGuard } from 'guards/authorize.guard';
 import { Roles } from 'decorators/roles.decorator';
 import {
   ICreateTraveler,
+  IGetTraveler,
   IListTravelersFilters,
   IUpdateTraveler,
 } from './traveler.dto';
@@ -46,5 +47,12 @@ export class TravelerController {
     @Req() req: Request,
   ) {
     return await this.travelerService.listTravelers(data, req.metadata);
+  }
+
+  @Get('detail')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(role.admin, role.agent_user)
+  async getTraveler(@Query() data: IGetTraveler, @Req() req: Request) {
+    return await this.travelerService.getTraveler(data, req.metadata);
   }
 }

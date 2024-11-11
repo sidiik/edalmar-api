@@ -7,6 +7,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import {
@@ -447,11 +448,11 @@ export class AgencyService {
         ((await this.cacheManager.get('USER-' + userId)) as user);
 
       if (!user && isCurrentUser) {
-        throw new NotFoundException(
+        throw new UnauthorizedException(
           ApiResponse.failure(
             null,
             agencyErrors.agentNotFound,
-            HttpStatus.NOT_FOUND,
+            HttpStatus.UNAUTHORIZED,
           ),
         );
       }
@@ -554,6 +555,7 @@ export class AgencyService {
         data.agencySlug,
         [agent_role.admin, agent_role.editor, agent_role.user],
         false,
+        true,
       );
 
       this.logger.log('Resetting agent password');

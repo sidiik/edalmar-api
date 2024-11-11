@@ -480,15 +480,17 @@ export class TicketService {
         );
       }
 
-      // Delete existing media
-      this.logger.log('Deleting existing media');
-      await this.prismaService.ticket_media.deleteMany({
-        where: {
-          ticket_id: +data.ticketId,
-        },
-      });
+      if (ticket?.ticket_media?.media_url) {
+        // Delete existing media
+        this.logger.log('Deleting existing media');
+        await this.prismaService.ticket_media.deleteMany({
+          where: {
+            ticket_id: +data.ticketId,
+          },
+        });
 
-      await this.s3DeleteKey(ticket.ticket_media.key);
+        await this.s3DeleteKey(ticket.ticket_media.key);
+      }
 
       // Upload media
       this.logger.log('Uploading media');

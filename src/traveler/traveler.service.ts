@@ -9,6 +9,7 @@ import { DBLoggerService } from 'src/logger/logger.service';
 import { PrismaService } from 'src/prisma.service';
 import {
   ICreateTraveler,
+  IGetTraveler,
   IListTravelersFilters,
   IUpdateTraveler,
 } from './traveler.dto';
@@ -48,14 +49,12 @@ export class TravelerService {
 
       const traveler = await this.prismaService.traveler.findFirst({
         where: {
-          OR: [
+          AND: [
             { phone: data.phone },
             { email: data.email },
             { whatsapp_number: data.whatsappNumber },
+            { agency: { slug: data.agencySlug } },
           ],
-          agency: {
-            slug: data.agencySlug,
-          },
         },
       });
 
@@ -213,20 +212,21 @@ export class TravelerService {
   }
 
   //   Get Traveler
-  async getTraveler(travelerId: number, agencySlug: string, metadata: any) {
+  async getTraveler(data: IGetTraveler, metadata: any) {
     try {
       this.logger.log('Checking if the user is linked to an agency');
-      await this.agencyService.checkAgentLinked(metadata.user, agencySlug, [
-        agent_role.admin,
-        agent_role.editor,
-      ]);
+      await this.agencyService.checkAgentLinked(
+        metadata.user,
+        data.agencySlug,
+        [agent_role.admin, agent_role.editor],
+      );
 
       this.logger.log('Checking if traveler exists');
       const traveler = await this.prismaService.traveler.findFirst({
         where: {
-          id: travelerId,
+          id: +data.travelerId,
           agency: {
-            slug: agencySlug,
+            slug: data.agencySlug,
           },
         },
       });
@@ -328,6 +328,7 @@ export class TravelerService {
         totalPages,
       });
     } catch (error) {
+      console.log(error);
       throw new ApiException(error.response, error.status);
     }
   }

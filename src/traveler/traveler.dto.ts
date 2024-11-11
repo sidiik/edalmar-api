@@ -4,6 +4,7 @@ import {
   IsDate,
   IsDateString,
   IsNumber,
+  IsNumberString,
   IsOptional,
   IsString,
   MinLength,
@@ -122,4 +123,12 @@ export class IListTravelersFilters {
   @IsString()
   @IsOptional()
   endDate: string;
+}
+
+export class IGetTraveler {
+  @IsNumberString()
+  travelerId: string;
+
+  @IsString()
+  agencySlug: string;
 }
