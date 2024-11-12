@@ -1,7 +1,6 @@
 import { Transform } from 'class-transformer';
 import {
   IsBoolean,
-  IsDate,
   IsDateString,
   IsNumber,
   IsNumberString,
@@ -69,7 +68,7 @@ export class IUpdateTraveler {
   @MinLength(9)
   whatsappNumber: string;
 
-  @IsDate()
+  @IsDateString()
   @IsOptional()
   dob: string;
 

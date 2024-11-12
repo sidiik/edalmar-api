@@ -1,10 +1,17 @@
 import { Transform } from 'class-transformer';
 import {
+  IsEnum,
   IsNumber,
   IsNumberString,
   IsOptional,
   IsString,
 } from 'class-validator';
+
+export enum IncludeBooking {
+  traveler = 'traveler',
+  tickets = 'tickets',
+  all = 'all',
+}
 
 export class ICreateBooking {
   @IsNumber()
@@ -48,10 +55,26 @@ export class IBookingFilters {
 
   @IsString()
   @IsOptional()
+  travelerId: string;
+
+  @IsEnum(IncludeBooking)
+  @IsOptional()
+  include: IncludeBooking;
+
+  @IsString()
+  @IsOptional()
   whatsappPhoneNumber: string;
 
   @IsString()
   agencySlug: string;
+
+  @IsString()
+  @IsOptional()
+  startDate: string;
+
+  @IsString()
+  @IsOptional()
+  endDate: string;
 }
 
 export class ICreateTicket {

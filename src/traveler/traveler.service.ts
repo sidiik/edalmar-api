@@ -148,16 +148,16 @@ export class TravelerService {
       );
       const existingTraveler = await this.prismaService.traveler.findFirst({
         where: {
-          OR: [
+          AND: [
             { phone: data.phone },
             { email: data.email },
             { whatsapp_number: data.whatsappNumber },
+            {
+              agency: { slug: data.agencySlug },
+            },
           ],
           NOT: {
             id: data.travelerId,
-          },
-          agency: {
-            slug: data.agencySlug,
           },
         },
       });

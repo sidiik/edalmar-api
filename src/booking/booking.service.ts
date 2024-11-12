@@ -10,6 +10,7 @@ import {
   IBookingFilters,
   ICreateBooking,
   IGetBooking,
+  IncludeBooking,
   IUpdateBooking,
 } from './booking.dto';
 import { ApiException } from 'helpers/ApiException';
@@ -18,6 +19,7 @@ import { ApiResponse } from 'helpers/ApiResponse';
 import { travelerErrors } from 'constants/';
 import { actions } from 'constants/actions';
 import { agent_role, Prisma } from '@prisma/client';
+import * as dayjs from 'dayjs';
 
 @Injectable()
 export class BookingService {
@@ -206,6 +208,7 @@ export class BookingService {
 
       const whereClause: Prisma.bookingWhereInput = {
         traveler: {
+          id: !filters.travelerId ? undefined : +filters.travelerId,
           phone: !filters.travelerPhone
             ? undefined
             : {
@@ -220,6 +223,14 @@ export class BookingService {
                 mode: Prisma.QueryMode.insensitive,
               },
         },
+        created_at: {
+          gte: !filters.startDate
+            ? undefined
+            : dayjs(filters.startDate).toDate(),
+          lte: !filters.endDate
+            ? undefined
+            : dayjs(filters.endDate).endOf('day').toDate(),
+        },
         agency: {
           slug: filters.agencySlug,
         },
@@ -233,13 +244,20 @@ export class BookingService {
           created_at: 'desc',
         },
         include: {
-          traveler: {
+          traveler:
+            filters.include === IncludeBooking.traveler ||
+            filters.include === IncludeBooking.all
+              ? true
+              : false,
+          tickets:
+            filters.include === IncludeBooking.tickets ||
+            filters.include === IncludeBooking.all
+              ? true
+              : false,
+
+          _count: {
             select: {
-              id: true,
-              first_name: true,
-              last_name: true,
-              phone: true,
-              whatsapp_number: true,
+              tickets: true,
             },
           },
         },

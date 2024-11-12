@@ -47,7 +47,7 @@ export class MessengerService {
           to: travelerWhatsappNumber,
           type: 'template',
           template: {
-            name: 'flight_ticket_notification',
+            name: 'flight_alert',
             language: {
               code: 'en',
             },
