@@ -66,6 +66,7 @@ model user {
   session               session[]
   otp                   otp[]
   activity_log          activity_log[]
+  // last_accessed_from    String?
 
   @@index([firstname, lastname, email, phone_number, whatsapp_number, role, created_at])
 }

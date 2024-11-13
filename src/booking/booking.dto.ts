@@ -1,3 +1,4 @@
+import { booking_status } from '@prisma/client';
 import { Transform } from 'class-transformer';
 import {
   IsEnum,
@@ -30,6 +31,9 @@ export class IUpdateBooking {
 
   @IsNumber()
   travelerId: number;
+
+  @IsEnum(booking_status)
+  bookingStatus: booking_status;
 
   @IsString()
   agencySlug: string;

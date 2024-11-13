@@ -168,6 +168,7 @@ export class BookingService {
         },
         data: {
           booking_description: data.bookingDescription,
+          booking_status: data.bookingStatus,
           traveler: {
             connect: {
               id: data.travelerId,
