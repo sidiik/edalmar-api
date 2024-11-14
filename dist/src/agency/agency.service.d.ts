@@ -1,0 +1,131 @@
+import { PrismaService } from 'src/prisma.service';
+import { ICreateAgency, ILinkAgent, IListAgencyFilters, IResetAgentPassword, IUpdateAgency, IUpdateAgencyKeys } from './agency.dto';
+import { ApiResponse } from 'helpers/ApiResponse';
+import { Request } from 'express';
+import { DBLoggerService } from 'src/logger/logger.service';
+import { Cache } from '@nestjs/cache-manager';
+import { IModifyAgentStatus } from 'src/user/user.dto';
+export declare class AgencyService {
+    private readonly prismaService;
+    private readonly dbLogger;
+    private cacheManager;
+    private readonly logger;
+    constructor(prismaService: PrismaService, dbLogger: DBLoggerService, cacheManager: Cache);
+    getAgencies(filters: IListAgencyFilters): Promise<ApiResponse<{
+        data: {
+            name: string;
+            id: number;
+            address: string;
+            email: string;
+            created_at: Date;
+            updated_at: Date;
+            slug: string | null;
+            agency_disabled: boolean;
+            logo_url: string | null;
+            phone: string;
+            user_lock_minutes: number | null;
+            user_login_attempts: number | null;
+            account_lock_enabled: boolean;
+            max_agents: number | null;
+        }[];
+        totalCount: number;
+        totalPages: number;
+        page: number;
+        size: number;
+    }>>;
+    createAgency(data: ICreateAgency, req: Request): Promise<ApiResponse<{
+        name: string;
+        id: number;
+        address: string;
+        email: string;
+        created_at: Date;
+        updated_at: Date;
+        slug: string | null;
+        agency_disabled: boolean;
+        logo_url: string | null;
+        phone: string;
+        user_lock_minutes: number | null;
+        user_login_attempts: number | null;
+        account_lock_enabled: boolean;
+        max_agents: number | null;
+    }>>;
+    updateAgency(data: IUpdateAgency, req: Request): Promise<ApiResponse<{
+        name: string;
+        id: number;
+        address: string;
+        email: string;
+        created_at: Date;
+        updated_at: Date;
+        slug: string | null;
+        agency_disabled: boolean;
+        logo_url: string | null;
+        phone: string;
+        user_lock_minutes: number | null;
+        user_login_attempts: number | null;
+        account_lock_enabled: boolean;
+        max_agents: number | null;
+    }>>;
+    linkAgent(data: ILinkAgent, req: Request): Promise<ApiResponse<any>>;
+    getAgents(slug: string, metadata: any): Promise<ApiResponse<({
+        user: {
+            id: number;
+            firstname: string;
+            lastname: string;
+            profile_url: string;
+            is_2fa_enabled: boolean;
+            is_suspended: boolean;
+            address: string;
+            email: string;
+            phone_number: string;
+            whatsapp_number: string;
+            role: import(".prisma/client").$Enums.role;
+        };
+    } & {
+        id: number;
+        created_at: Date;
+        updated_at: Date;
+        role: import(".prisma/client").$Enums.agent_role;
+        user_id: number;
+        agency_id: number;
+        agent_status: import(".prisma/client").$Enums.agent_status;
+        start_hour: number | null;
+        end_hour: number | null;
+    })[]>>;
+    upsertAgencyKeys(data: IUpdateAgencyKeys, metadata: any): Promise<ApiResponse<any>>;
+    checkAgentLinked(userId: number, agencySlug: string, requiredRoles: string[], isCurrentUser?: boolean, silent?: boolean): Promise<{
+        user: {
+            id: number;
+            firstname: string;
+            lastname: string;
+            first_login: boolean;
+            profile_url: string | null;
+            login_attempts: number;
+            lock_until: Date | null;
+            is_2fa_enabled: boolean;
+            is_suspended: boolean;
+            address: string;
+            email: string;
+            password: string;
+            phone_number: string;
+            whatsapp_number: string;
+            created_at: Date;
+            updated_at: Date;
+            role: import(".prisma/client").$Enums.role;
+            refresh_token_version: string | null;
+        };
+        agent: {
+            id: number;
+            created_at: Date;
+            updated_at: Date;
+            role: import(".prisma/client").$Enums.agent_role;
+            user_id: number;
+            agency_id: number;
+            agent_status: import(".prisma/client").$Enums.agent_status;
+            start_hour: number | null;
+            end_hour: number | null;
+        };
+    }>;
+    checkAgencyDisabled(agencySlug: string, silent?: boolean): Promise<void>;
+    resetAgentPassword(data: IResetAgentPassword, metadata: any): Promise<ApiResponse<any>>;
+    modifyAgentStatus(data: IModifyAgentStatus, metadata: any): Promise<ApiResponse<any>>;
+}

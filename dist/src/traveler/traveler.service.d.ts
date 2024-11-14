@@ -1,0 +1,82 @@
+import { DBLoggerService } from 'src/logger/logger.service';
+import { PrismaService } from 'src/prisma.service';
+import { ICreateTraveler, IGetTraveler, IListTravelersFilters, IUpdateTraveler } from './traveler.dto';
+import { AgencyService } from 'src/agency/agency.service';
+import { ApiResponse } from 'helpers/ApiResponse';
+export declare class TravelerService {
+    private readonly prismaService;
+    private readonly dbLogger;
+    private readonly agencyService;
+    private readonly logger;
+    constructor(prismaService: PrismaService, dbLogger: DBLoggerService, agencyService: AgencyService);
+    createTraveler(data: ICreateTraveler, metadata: any): Promise<ApiResponse<{
+        id: number;
+        address: string;
+        email: string | null;
+        whatsapp_number: string;
+        created_at: Date;
+        updated_at: Date;
+        phone: string;
+        agency_id: number;
+        dob: Date | null;
+        nationality: string;
+        first_name: string;
+        last_name: string;
+        image_url: string | null;
+        notifications_enabled: boolean;
+    }>>;
+    updateTraveler(data: IUpdateTraveler, metadata: any): Promise<ApiResponse<{
+        id: number;
+        address: string;
+        email: string | null;
+        whatsapp_number: string;
+        created_at: Date;
+        updated_at: Date;
+        phone: string;
+        agency_id: number;
+        dob: Date | null;
+        nationality: string;
+        first_name: string;
+        last_name: string;
+        image_url: string | null;
+        notifications_enabled: boolean;
+    }>>;
+    getTraveler(data: IGetTraveler, metadata: any): Promise<ApiResponse<{
+        id: number;
+        address: string;
+        email: string | null;
+        whatsapp_number: string;
+        created_at: Date;
+        updated_at: Date;
+        phone: string;
+        agency_id: number;
+        dob: Date | null;
+        nationality: string;
+        first_name: string;
+        last_name: string;
+        image_url: string | null;
+        notifications_enabled: boolean;
+    }>>;
+    listTravelers(filters: IListTravelersFilters, metadata: any): Promise<ApiResponse<{
+        data: {
+            id: number;
+            address: string;
+            email: string | null;
+            whatsapp_number: string;
+            created_at: Date;
+            updated_at: Date;
+            phone: string;
+            agency_id: number;
+            dob: Date | null;
+            nationality: string;
+            first_name: string;
+            last_name: string;
+            image_url: string | null;
+            notifications_enabled: boolean;
+        }[];
+        totalCount: number;
+        page: number;
+        size: number;
+        totalPages: number;
+    }>>;
+}
