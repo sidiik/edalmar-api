@@ -323,6 +323,7 @@ export class TicketService {
 
       const where: Prisma.ticketWhereInput = {
         booking: {
+          id: !filters.bookingId ? undefined : +filters.bookingId,
           agency: {
             slug: filters.agencySlug,
           },
@@ -341,6 +342,12 @@ export class TicketService {
         where,
         take: size,
         skip,
+        orderBy: {
+          id: 'desc',
+        },
+        include: {
+          ticket_media: true,
+        },
       });
 
       const totalCount = await this.prismaService.ticket.count({

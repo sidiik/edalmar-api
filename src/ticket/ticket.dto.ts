@@ -5,6 +5,7 @@ import {
   IsBoolean,
   IsDateString,
   IsNumber,
+  IsNumberString,
   IsOptional,
   IsString,
   ValidateNested,
@@ -106,6 +107,10 @@ export class IRemoveTicket {
 export class ITicketListFilters {
   @IsString()
   agencySlug: string;
+
+  @IsNumberString()
+  @IsOptional()
+  bookingId: string;
 
   @IsString()
   @IsOptional()

@@ -307,6 +307,9 @@ export class BookingService {
         include: {
           traveler: true,
           tickets: {
+            orderBy: {
+              id: 'desc',
+            },
             include: {
               ticket_media: true,
             },
