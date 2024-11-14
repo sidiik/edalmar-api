@@ -11,7 +11,11 @@ async function bootstrap() {
   app.setGlobalPrefix('v1');
   app.use(cookieParser());
   app.enableCors({
-    origin: ['http://localhost:5173', 'https://staging.edalmar.com'],
+    origin: [
+      'http://localhost:5173',
+      'https://staging.edalmar.com',
+      'https://staging-api.edalmar.com',
+    ],
     credentials: true,
   });
 
