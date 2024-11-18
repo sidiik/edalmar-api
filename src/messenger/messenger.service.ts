@@ -187,4 +187,124 @@ export class MessengerService {
       this.logger.error(error);
     }
   }
+
+  async sendWATicketAlert({
+    phoneNumberId,
+    daysLeft,
+    mediaUrl,
+    travelerName,
+    flightNumber,
+    departure,
+    arrival,
+    date,
+    time,
+    travelerWhatsappNumber,
+    agencyName,
+    agencyWhatsappNumber,
+    agencyPhoneNumber,
+    authToken,
+  }: {
+    phoneNumberId: string;
+    daysLeft: number;
+    mediaUrl: string;
+    travelerName: string;
+    flightNumber: string;
+    departure: string;
+    arrival: string;
+    date: string;
+    time: string;
+    seatNumber: string;
+    travelerWhatsappNumber: string;
+    agencyName: string;
+    agencyWhatsappNumber: string;
+    agencyPhoneNumber: string;
+    authToken: string;
+  }) {
+    try {
+      const url = `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`;
+      const response = await axios.post(
+        url,
+        {
+          messaging_product: 'whatsapp',
+          recipient_type: 'individual',
+          to: travelerWhatsappNumber,
+          type: 'template',
+          template: {
+            name: 'departure_alert',
+            language: {
+              code: 'en',
+            },
+            components: [
+              {
+                type: 'header',
+                parameters: [
+                  {
+                    type: 'document',
+                    document: {
+                      link: mediaUrl,
+                      filename: `${travelerName}-${flightNumber}.pdf`,
+                    },
+                  },
+                ],
+              },
+              {
+                type: 'body',
+                parameters: [
+                  {
+                    type: 'text',
+                    text: travelerName,
+                  },
+                  {
+                    type: 'text',
+                    text: flightNumber,
+                  },
+                  {
+                    type: 'text',
+                    text: departure,
+                  },
+                  {
+                    type: 'text',
+                    text: arrival,
+                  },
+                  {
+                    type: 'text',
+                    text: date,
+                  },
+                  {
+                    type: 'text',
+                    text: time,
+                  },
+                  {
+                    type: 'text',
+                    text: agencyName,
+                  },
+                  {
+                    type: 'text',
+                    text: agencyWhatsappNumber,
+                  },
+                  {
+                    type: 'text',
+                    text: agencyPhoneNumber,
+                  },
+                  {
+                    type: 'text',
+                    text: daysLeft,
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        },
+      );
+
+      return response.data;
+    } catch (error) {
+      throw new ApiException(error.response, error.status);
+    }
+  }
 }

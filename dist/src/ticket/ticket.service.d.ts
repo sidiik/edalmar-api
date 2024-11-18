@@ -43,6 +43,7 @@ export declare class TicketService {
             departure_city: string;
             arrival_city: string;
             is_deleted: boolean;
+            last_notified: Date | null;
         })[];
         totalCount: number;
         totalPages: number;

@@ -20,6 +20,7 @@ const refresh_guard_1 = require("../../guards/refresh.guard");
 const jwt_guard_1 = require("../../guards/jwt.guard");
 const client_1 = require("@prisma/client");
 const roles_decorator_1 = require("../../decorators/roles.decorator");
+const throttler_1 = require("@nestjs/throttler");
 let AuthController = class AuthController {
     authService;
     constructor(authService) {
@@ -85,6 +86,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], AuthController.prototype, "signOut", null);
 __decorate([
+    (0, throttler_1.Throttle)({ default: { limit: 60, ttl: 60000 } }),
     (0, common_1.Get)('whoami'),
     (0, common_1.UseGuards)(jwt_guard_1.AuthGuard),
     __param(0, (0, common_1.Req)()),

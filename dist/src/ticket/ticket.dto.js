@@ -24,10 +24,12 @@ class ICreateTicketItem {
 exports.ICreateTicketItem = ICreateTicketItem;
 __decorate([
     (0, class_validator_1.IsString)(),
+    (0, class_transformer_1.Transform)(({ value }) => value.toUpperCase()),
     __metadata("design:type", String)
 ], ICreateTicketItem.prototype, "ticketReference", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
+    (0, class_transformer_1.Transform)(({ value }) => value.toUpperCase()),
     __metadata("design:type", String)
 ], ICreateTicketItem.prototype, "flightNumber", void 0);
 __decorate([
@@ -40,10 +42,12 @@ __decorate([
 ], ICreateTicketItem.prototype, "arrivalTime", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
+    (0, class_transformer_1.Transform)(({ value }) => value.toUpperCase()),
     __metadata("design:type", String)
 ], ICreateTicketItem.prototype, "departureCity", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
+    (0, class_transformer_1.Transform)(({ value }) => value.toUpperCase()),
     __metadata("design:type", String)
 ], ICreateTicketItem.prototype, "arrivalCity", void 0);
 __decorate([
@@ -68,10 +72,12 @@ __decorate([
 ], IUpdateTicketItem.prototype, "ticketId", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
+    (0, class_transformer_1.Transform)(({ value }) => value.toUpperCase()),
     __metadata("design:type", String)
 ], IUpdateTicketItem.prototype, "ticketReference", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
+    (0, class_transformer_1.Transform)(({ value }) => value.toUpperCase()),
     __metadata("design:type", String)
 ], IUpdateTicketItem.prototype, "flightNumber", void 0);
 __decorate([
@@ -84,10 +90,12 @@ __decorate([
 ], IUpdateTicketItem.prototype, "arrivalTime", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
+    (0, class_transformer_1.Transform)(({ value }) => value.toUpperCase()),
     __metadata("design:type", String)
 ], IUpdateTicketItem.prototype, "departureCity", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
+    (0, class_transformer_1.Transform)(({ value }) => value.toUpperCase()),
     __metadata("design:type", String)
 ], IUpdateTicketItem.prototype, "arrivalCity", void 0);
 __decorate([

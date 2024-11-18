@@ -11,9 +11,11 @@ import {
 
 export class ICreateTraveler {
   @IsString()
+  @Transform(({ value }: { value: string }) => value.toUpperCase())
   firstname: string;
 
   @IsString()
+  @Transform(({ value }: { value: string }) => value.toUpperCase())
   lastname: string;
 
   @IsString()
@@ -48,9 +50,11 @@ export class ICreateTraveler {
 
 export class IUpdateTraveler {
   @IsString()
+  @Transform(({ value }: { value: string }) => value.toUpperCase())
   firstname: string;
 
   @IsString()
+  @Transform(({ value }: { value: string }) => value.toUpperCase())
   lastname: string;
 
   @IsString()

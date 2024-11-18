@@ -16,6 +16,7 @@ import { RefreshGuard } from 'guards/refresh.guard';
 import { AuthGuard } from 'guards/jwt.guard';
 import { role } from '@prisma/client';
 import { Roles } from 'decorators/roles.decorator';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('auth')
 export class AuthController {
@@ -59,6 +60,7 @@ export class AuthController {
     return this.authService.signOut(req.metadata, res);
   }
 
+  @Throttle({ default: { limit: 60, ttl: 60000 } })
   @Get('whoami')
   @UseGuards(AuthGuard)
   whoAmI(@Req() req: Request) {

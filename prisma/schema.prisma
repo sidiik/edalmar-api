@@ -227,6 +227,7 @@ model ticket {
   updated_at       DateTime      @updatedAt
   ticket_media     ticket_media?
   is_deleted       Boolean       @default(false)
+  last_notified    DateTime?
 
   @@index([ticket_reference, departure_time, arrival_time, return_date, departure_city, arrival_city])
 }

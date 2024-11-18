@@ -141,6 +141,90 @@ let MessengerService = MessengerService_1 = class MessengerService {
             this.logger.error(error);
         }
     }
+    async sendWATicketAlert({ phoneNumberId, daysLeft, mediaUrl, travelerName, flightNumber, departure, arrival, date, time, travelerWhatsappNumber, agencyName, agencyWhatsappNumber, agencyPhoneNumber, authToken, }) {
+        try {
+            const url = `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`;
+            const response = await axios_1.default.post(url, {
+                messaging_product: 'whatsapp',
+                recipient_type: 'individual',
+                to: travelerWhatsappNumber,
+                type: 'template',
+                template: {
+                    name: 'departure_alert',
+                    language: {
+                        code: 'en',
+                    },
+                    components: [
+                        {
+                            type: 'header',
+                            parameters: [
+                                {
+                                    type: 'document',
+                                    document: {
+                                        link: mediaUrl,
+                                        filename: `${travelerName}-${flightNumber}.pdf`,
+                                    },
+                                },
+                            ],
+                        },
+                        {
+                            type: 'body',
+                            parameters: [
+                                {
+                                    type: 'text',
+                                    text: travelerName,
+                                },
+                                {
+                                    type: 'text',
+                                    text: flightNumber,
+                                },
+                                {
+                                    type: 'text',
+                                    text: departure,
+                                },
+                                {
+                                    type: 'text',
+                                    text: arrival,
+                                },
+                                {
+                                    type: 'text',
+                                    text: date,
+                                },
+                                {
+                                    type: 'text',
+                                    text: time,
+                                },
+                                {
+                                    type: 'text',
+                                    text: agencyName,
+                                },
+                                {
+                                    type: 'text',
+                                    text: agencyWhatsappNumber,
+                                },
+                                {
+                                    type: 'text',
+                                    text: agencyPhoneNumber,
+                                },
+                                {
+                                    type: 'text',
+                                    text: daysLeft,
+                                },
+                            ],
+                        },
+                    ],
+                },
+            }, {
+                headers: {
+                    Authorization: `Bearer ${authToken}`,
+                },
+            });
+            return response.data;
+        }
+        catch (error) {
+            throw new ApiException_1.ApiException(error.response, error.status);
+        }
+    }
 };
 exports.MessengerService = MessengerService;
 exports.MessengerService = MessengerService = MessengerService_1 = __decorate([

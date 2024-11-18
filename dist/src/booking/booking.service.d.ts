@@ -63,6 +63,7 @@ export declare class BookingService {
                 departure_city: string;
                 arrival_city: string;
                 is_deleted: boolean;
+                last_notified: Date | null;
             }[];
         } & {
             id: number;
@@ -130,6 +131,7 @@ export declare class BookingService {
             departure_city: string;
             arrival_city: string;
             is_deleted: boolean;
+            last_notified: Date | null;
         })[];
     } & {
         id: number;

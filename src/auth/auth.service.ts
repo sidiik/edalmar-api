@@ -551,21 +551,21 @@ export class AuthService {
       res.cookie('refresh_token', refresh_token, {
         httpOnly: true,
         sameSite: 'none',
-        secure: true,
+        secure: process.env.NODE_ENV === 'production',
         expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1),
       });
 
       res.cookie('device_id', device_id || newDeviceId, {
         httpOnly: true,
-        sameSite: 'none',
+        sameSite: 'strict',
         secure: true,
         expires: new Date('9999-12-31T23:59:59Z'),
       });
 
       res.cookie('access_token', access_token, {
         httpOnly: true,
-        sameSite: 'none',
-        secure: true,
+        sameSite: 'strict',
+        secure: process.env.NODE_ENV === 'production',
         expires: new Date(Date.now() + 1000 * 60 * 15),
       });
 

@@ -27,10 +27,12 @@ class ICreateTraveler {
 exports.ICreateTraveler = ICreateTraveler;
 __decorate([
     (0, class_validator_1.IsString)(),
+    (0, class_transformer_1.Transform)(({ value }) => value.toUpperCase()),
     __metadata("design:type", String)
 ], ICreateTraveler.prototype, "firstname", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
+    (0, class_transformer_1.Transform)(({ value }) => value.toUpperCase()),
     __metadata("design:type", String)
 ], ICreateTraveler.prototype, "lastname", void 0);
 __decorate([
@@ -86,10 +88,12 @@ class IUpdateTraveler {
 exports.IUpdateTraveler = IUpdateTraveler;
 __decorate([
     (0, class_validator_1.IsString)(),
+    (0, class_transformer_1.Transform)(({ value }) => value.toUpperCase()),
     __metadata("design:type", String)
 ], IUpdateTraveler.prototype, "firstname", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
+    (0, class_transformer_1.Transform)(({ value }) => value.toUpperCase()),
     __metadata("design:type", String)
 ], IUpdateTraveler.prototype, "lastname", void 0);
 __decorate([

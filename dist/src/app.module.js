@@ -20,6 +20,11 @@ const user_module_1 = require("./user/user.module");
 const traveler_module_1 = require("./traveler/traveler.module");
 const booking_module_1 = require("./booking/booking.module");
 const ticket_module_1 = require("./ticket/ticket.module");
+const throttler_1 = require("@nestjs/throttler");
+const core_1 = require("@nestjs/core");
+const throttler_guard_1 = require("../guards/throttler.guard");
+const schedule_module_1 = require("./schedule/schedule.module");
+const schedule_1 = require("@nestjs/schedule");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer.apply(metadata_middleware_1.IpMiddleware).forRoutes('*');
@@ -48,9 +53,22 @@ exports.AppModule = AppModule = __decorate([
             traveler_module_1.TravelerModule,
             booking_module_1.BookingModule,
             ticket_module_1.TicketModule,
+            throttler_1.ThrottlerModule.forRoot([
+                {
+                    ttl: 60000,
+                    limit: 10,
+                },
+            ]),
+            schedule_1.ScheduleModule.forRoot(),
+            schedule_module_1.ScheduleMessageModule,
         ],
         controllers: [],
-        providers: [],
+        providers: [
+            {
+                provide: core_1.APP_GUARD,
+                useClass: throttler_guard_1.CustomThrottlerGuard,
+            },
+        ],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map

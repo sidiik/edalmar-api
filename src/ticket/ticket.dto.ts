@@ -13,9 +13,11 @@ import {
 
 export class ICreateTicketItem {
   @IsString()
+  @Transform(({ value }: { value: string }) => value.toUpperCase())
   ticketReference: string;
 
   @IsString()
+  @Transform(({ value }: { value: string }) => value.toUpperCase())
   flightNumber: string;
 
   @IsDateString()
@@ -25,9 +27,11 @@ export class ICreateTicketItem {
   arrivalTime: string;
 
   @IsString()
+  @Transform(({ value }: { value: string }) => value.toUpperCase())
   departureCity: string;
 
   @IsString()
+  @Transform(({ value }: { value: string }) => value.toUpperCase())
   arrivalCity: string;
 
   @IsDateString()
@@ -40,9 +44,11 @@ export class IUpdateTicketItem {
   ticketId: number;
 
   @IsString()
+  @Transform(({ value }: { value: string }) => value.toUpperCase())
   ticketReference: string;
 
   @IsString()
+  @Transform(({ value }: { value: string }) => value.toUpperCase())
   flightNumber: string;
 
   @IsDateString()
@@ -52,9 +58,11 @@ export class IUpdateTicketItem {
   arrivalTime: string;
 
   @IsString()
+  @Transform(({ value }: { value: string }) => value.toUpperCase())
   departureCity: string;
 
   @IsString()
+  @Transform(({ value }: { value: string }) => value.toUpperCase())
   arrivalCity: string;
 
   @IsDateString()

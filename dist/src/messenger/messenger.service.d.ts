@@ -22,4 +22,21 @@ export declare class MessengerService {
         code: string;
         authToken: string;
     }): Promise<any>;
+    sendWATicketAlert({ phoneNumberId, daysLeft, mediaUrl, travelerName, flightNumber, departure, arrival, date, time, travelerWhatsappNumber, agencyName, agencyWhatsappNumber, agencyPhoneNumber, authToken, }: {
+        phoneNumberId: string;
+        daysLeft: number;
+        mediaUrl: string;
+        travelerName: string;
+        flightNumber: string;
+        departure: string;
+        arrival: string;
+        date: string;
+        time: string;
+        seatNumber: string;
+        travelerWhatsappNumber: string;
+        agencyName: string;
+        agencyWhatsappNumber: string;
+        agencyPhoneNumber: string;
+        authToken: string;
+    }): Promise<any>;
 }

@@ -11,6 +11,11 @@ import { UserModule } from './user/user.module';
 import { TravelerModule } from './traveler/traveler.module';
 import { BookingModule } from './booking/booking.module';
 import { TicketModule } from './ticket/ticket.module';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { CustomThrottlerGuard } from 'guards/throttler.guard';
+import { ScheduleMessageModule } from './schedule/schedule.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -25,7 +30,6 @@ import { TicketModule } from './ticket/ticket.module';
         port: 6739,
         password: process.env.REDIS_PASSWORD,
       },
-
       isGlobal: true,
       ttl: 3600000 * 3,
     }),
@@ -33,9 +37,22 @@ import { TicketModule } from './ticket/ticket.module';
     TravelerModule,
     BookingModule,
     TicketModule,
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 10,
+      },
+    ]),
+    ScheduleModule.forRoot(),
+    ScheduleMessageModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: CustomThrottlerGuard,
+    },
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

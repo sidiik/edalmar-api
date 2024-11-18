@@ -58,6 +58,7 @@ export declare class BookingController {
                 departure_city: string;
                 arrival_city: string;
                 is_deleted: boolean;
+                last_notified: Date | null;
             }[];
         } & {
             id: number;
@@ -125,6 +126,7 @@ export declare class BookingController {
             departure_city: string;
             arrival_city: string;
             is_deleted: boolean;
+            last_notified: Date | null;
         })[];
     } & {
         id: number;
