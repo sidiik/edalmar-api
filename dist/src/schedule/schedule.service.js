@@ -27,6 +27,13 @@ let ScheduleService = class ScheduleService {
             where: {
                 AND: [
                     {
+                        booking: {
+                            agency: {
+                                slug: 'daalo-airlines-travel-agency',
+                            },
+                        },
+                    },
+                    {
                         departure_time: {
                             lte: dayjs().add(3, 'day').toDate(),
                         },
@@ -58,7 +65,6 @@ let ScheduleService = class ScheduleService {
                 },
             },
         });
-        console.log(tickets);
         for (const ticket of tickets) {
             if (ticket.ticket_media.media_url) {
                 await this.prismaService.ticket.update({
