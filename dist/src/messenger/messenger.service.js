@@ -87,10 +87,12 @@ let MessengerService = MessengerService_1 = class MessengerService {
                     Authorization: `Bearer ${authToken}`,
                 },
             });
-            return response.data;
+            this.logger.log(`Message sent to ${travelerWhatsappNumber}`);
+            this.logger.log(response.data);
         }
         catch (error) {
-            throw new ApiException_1.ApiException(error.response, error.status);
+            this.logger.log("Failed to send message to traveler's whatsapp");
+            this.logger.error(JSON.stringify(error));
         }
     }
     async sendWAOTPMessage({ phoneNumberId, to, code, authToken, }) {
@@ -143,6 +145,7 @@ let MessengerService = MessengerService_1 = class MessengerService {
     }
     async sendWATicketAlert({ phoneNumberId, daysLeft, mediaUrl, travelerName, flightNumber, departure, arrival, date, time, travelerWhatsappNumber, agencyName, agencyWhatsappNumber, agencyPhoneNumber, authToken, }) {
         try {
+            this.logger.log(`Sending message to ${travelerWhatsappNumber}`);
             const url = `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`;
             const response = await axios_1.default.post(url, {
                 messaging_product: 'whatsapp',
@@ -219,9 +222,11 @@ let MessengerService = MessengerService_1 = class MessengerService {
                     Authorization: `Bearer ${authToken}`,
                 },
             });
+            this.logger.log(`Message sent to ${travelerWhatsappNumber}`);
             return response.data;
         }
         catch (error) {
+            this.logger.error(`Error sending message to ${travelerWhatsappNumber} ` + error);
             throw new ApiException_1.ApiException(error.response, error.status);
         }
     }

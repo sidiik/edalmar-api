@@ -5,7 +5,6 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { BookingService } from 'src/booking/booking.service';
 import { DBLoggerService } from 'src/logger/logger.service';
 import { PrismaService } from 'src/prisma.service';
 import {
@@ -27,24 +26,28 @@ import * as dayjs from 'dayjs';
 import { AuthService } from 'src/auth/auth.service';
 import * as AWS from 'aws-sdk';
 import { MessengerService } from 'src/messenger/messenger.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class TicketService {
   private logger = new Logger(TicketService.name);
-
-  s3 = new AWS.S3({
-    accessKeyId: process.env.S3_ACCESS_KEY,
-    secretAccessKey: process.env.S3_SECRET_KEY,
-  });
+  private s3: AWS.S3;
 
   constructor(
     private prismaService: PrismaService,
     private dbLoggerService: DBLoggerService,
-    private bookingService: BookingService,
     private agencyService: AgencyService,
     private authService: AuthService,
     private messengerService: MessengerService,
+    private readonly configService: ConfigService,
   ) {}
+
+  onModuleInit() {
+    this.s3 = new AWS.S3({
+      accessKeyId: this.configService.get<string>('S3_ACCESS_KEY'),
+      secretAccessKey: this.configService.get<string>('S3_SECRET_KEY'),
+    });
+  }
 
   async createTicket(data: ICreateTicket, metadata: any) {
     try {
@@ -59,22 +62,23 @@ export class TicketService {
         [agent_role.admin, agent_role.editor],
       );
 
-      // Check if booking exists
-      this.logger.log('Checking if booking exists');
-      const booking = await this.bookingService.getBooking(
-        {
-          agencySlug: data.agencySlug,
-          bookingId: data.bookingId,
+      // Check if traveler exists
+      this.logger.log('Checking if traveler exists');
+      const traveler = await this.prismaService.traveler.findFirst({
+        where: {
+          id: data.travelerId,
+          agency: {
+            slug: data.agencySlug,
+          },
         },
-        metadata,
-      );
+      });
 
-      if (!booking) {
-        this.logger.warn('Booking does not exist');
+      if (!traveler) {
+        this.logger.warn('traveler does not exist');
         throw new NotFoundException(
           ApiResponse.failure(
             null,
-            travelerErrors.bookingNotFound,
+            travelerErrors.travelerNotFound,
             HttpStatus.NOT_FOUND,
           ),
         );
@@ -84,9 +88,9 @@ export class TicketService {
         const ticketData: Prisma.ticketCreateInput = {
           arrival_city: ticket.arrivalCity,
           arrival_time: dayjs(ticket.arrivalTime).toDate(),
-          booking: {
+          traveler: {
             connect: {
-              id: data.bookingId,
+              id: data.travelerId,
             },
           },
           departure_city: ticket.departureCity,
@@ -96,6 +100,12 @@ export class TicketService {
           return_date: ticket.returnDate
             ? dayjs(ticket.returnDate).toDate()
             : undefined,
+
+          agency: {
+            connect: {
+              slug: data.agencySlug,
+            },
+          },
         };
 
         // Create ticket
@@ -109,7 +119,7 @@ export class TicketService {
         await this.dbLoggerService.log({
           action: actions.tickets.created,
           body: JSON.stringify(data),
-          description: `Ticket created for booking ${data.bookingId}`,
+          description: `Ticket created for traveler ${data.travelerId}`,
           metadata,
           user_id: metadata.user,
         });
@@ -135,22 +145,22 @@ export class TicketService {
         [agent_role.admin, agent_role.editor],
       );
 
-      // Check if booking exists
-      this.logger.log('Checking if booking exists');
-      const booking = await this.bookingService.getBooking(
-        {
-          agencySlug: data.agencySlug,
-          bookingId: data.bookingId,
+      // Check if traveler exists
+      this.logger.log('Checking if traveler exists');
+      const traveler = await this.prismaService.traveler.findFirst({
+        where: {
+          id: data.travelerId,
+          agency: {
+            slug: data.agencySlug,
+          },
         },
-        metadata,
-      );
-
-      if (!booking) {
-        this.logger.warn('Booking does not exist');
+      });
+      if (!traveler) {
+        this.logger.warn('Traveler does not exist');
         throw new NotFoundException(
           ApiResponse.failure(
             null,
-            travelerErrors.bookingNotFound,
+            travelerErrors.travelerNotFound,
             HttpStatus.NOT_FOUND,
           ),
         );
@@ -166,6 +176,12 @@ export class TicketService {
           return_date: ticket.returnDate
             ? dayjs(ticket.returnDate).toDate()
             : undefined,
+
+          traveler: {
+            connect: {
+              id: data.travelerId,
+            },
+          },
         };
 
         // Update ticket
@@ -182,7 +198,7 @@ export class TicketService {
         await this.dbLoggerService.log({
           action: actions.tickets.updated,
           body: JSON.stringify(data),
-          description: `Ticket updated for booking ${data.bookingId}`,
+          description: `Ticket updated for traveler ${data.travelerId}`,
           metadata,
           user_id: metadata.user,
         });
@@ -224,10 +240,8 @@ export class TicketService {
       const ticket = await this.prismaService.ticket.findUnique({
         where: {
           id: data.ticketId,
-          booking: {
-            agency: {
-              slug: data.agencySlug,
-            },
+          agency: {
+            slug: data.agencySlug,
           },
         },
       });
@@ -322,11 +336,17 @@ export class TicketService {
       const skip = (page - 1) * size;
 
       const where: Prisma.ticketWhereInput = {
-        booking: {
-          id: !filters.bookingId ? undefined : +filters.bookingId,
+        traveler: {
+          id: !JSON.parse(filters.travelerId) ? undefined : +filters.travelerId,
           agency: {
             slug: filters.agencySlug,
           },
+          phone: filters.travelerPhone
+            ? { contains: filters.travelerPhone }
+            : undefined,
+          whatsapp_number: filters.whatsappNumber
+            ? { contains: filters.whatsappNumber }
+            : undefined,
         },
         is_deleted:
           filters.isDeleted === 'true'
@@ -334,6 +354,19 @@ export class TicketService {
             : filters.isDeleted === 'false'
               ? false
               : undefined,
+
+        created_at: {
+          gte: !filters.startDate
+            ? undefined
+            : dayjs(filters.startDate).toDate(),
+          lte: !filters.endDate
+            ? undefined
+            : dayjs(filters.endDate).endOf('day').toDate(),
+        },
+
+        departure_time: !filters.departureDate
+          ? undefined
+          : dayjs(filters.departureDate).toDate(),
       };
 
       // Get tickets
@@ -347,6 +380,16 @@ export class TicketService {
         },
         include: {
           ticket_media: true,
+          traveler: {
+            select: {
+              id: true,
+              first_name: true,
+              last_name: true,
+              image_url: true,
+              phone: true,
+              whatsapp_number: true,
+            },
+          },
         },
       });
 
@@ -393,10 +436,8 @@ export class TicketService {
       const ticket = await this.prismaService.ticket.findUnique({
         where: {
           id: data.ticketId,
-          booking: {
-            agency: {
-              slug: data.agencySlug,
-            },
+          agency: {
+            slug: data.agencySlug,
           },
         },
       });
@@ -454,25 +495,21 @@ export class TicketService {
         [agent_role.admin, agent_role.editor],
       );
 
+      console.log(data);
+
       // Check if the ticket exists
       this.logger.log('Checking if ticket exists');
-      const ticket = await this.prismaService.ticket.findUnique({
+      const ticket = await this.prismaService.ticket.findFirst({
         where: {
           id: +data.ticketId,
-          booking: {
-            agency: {
-              slug: data.agencySlug,
-            },
+          agency: {
+            slug: data.agencySlug,
           },
         },
         include: {
-          booking: {
-            include: {
-              agency: true,
-              traveler: true,
-            },
-          },
           ticket_media: true,
+          traveler: true,
+          agency: true,
         },
       });
 
@@ -499,7 +536,6 @@ export class TicketService {
         await this.s3DeleteKey(ticket.ticket_media.key);
       }
 
-      // Upload media
       this.logger.log('Uploading media');
       const s3Response = await this.s3Upload(
         file.buffer,
@@ -526,13 +562,14 @@ export class TicketService {
             },
           },
           key: s3Response.Key,
-          media_url: s3Response.Location,
+          media_url: 'https://d3hae587xffvqe.cloudfront.net/' + s3Response.Key,
         },
       });
 
       return ApiResponse.success(null);
     } catch (error) {
-      this.logger.error(error);
+      console.log('ERROR: ', error);
+      this.logger.error('ERROR: ' + error);
       throw new ApiException(error.response, error.status);
     }
   }
@@ -540,7 +577,7 @@ export class TicketService {
   async s3Upload(file: any, name: string, mimetype: string) {
     try {
       const params = {
-        Bucket: process.env.BUCKET_NAME,
+        Bucket: this.configService.get('BUCKET_NAME'),
         Key: name,
         Body: file,
         // ACL: 'public-read',
@@ -558,7 +595,7 @@ export class TicketService {
   async s3DeleteKey(key: string) {
     try {
       const params = {
-        Bucket: process.env.BUCKET_NAME,
+        Bucket: this.configService.get('BUCKET_NAME'),
         Key: key,
       };
       let s3Response = await this.s3.deleteObject(params).promise();
@@ -587,20 +624,14 @@ export class TicketService {
       const ticket = await this.prismaService.ticket.findUnique({
         where: {
           id: +data.ticketId,
-          booking: {
-            agency: {
-              slug: data.agencySlug,
-            },
+          agency: {
+            slug: data.agencySlug,
           },
         },
         include: {
           ticket_media: true,
-          booking: {
-            include: {
-              agency: true,
-              traveler: true,
-            },
-          },
+          agency: true,
+          traveler: true,
         },
       });
 
@@ -618,13 +649,11 @@ export class TicketService {
       // Send message
       this.logger.log('Sending message');
 
-      const {
-        booking: { agency, traveler },
-      } = ticket;
+      const { agency, traveler } = ticket;
 
       await this.messengerService.sendWATicketNotification({
-        phoneNumberId: process.env.PHONE_NUMBER_ID,
-        authToken: process.env.AUTH_TOKEN,
+        phoneNumberId: this.configService.get('PHONE_NUMBER_ID'),
+        authToken: this.configService.get('AUTH_TOKEN'),
         agencyName: agency.name,
         agencyPhoneNumber: agency.phone,
         agencyWhatsappNumber: agency.phone,
@@ -647,6 +676,6 @@ export class TicketService {
   }
 
   private keyNameGenerator({ ticket }: { ticket: any }) {
-    return `${ticket.booking.agency.slug}/tickets/b${ticket.booking.id}t-${ticket.id}tr-${ticket.booking.traveler.id}-${dayjs().format('YYYY-MM-DD-HH-mm-ss')}`;
+    return `${ticket.agency.slug}/tickets/travelerPhone-${ticket.traveler.phone}-ticketId-000${ticket.id}-${dayjs().format('YYYY-MM-DD-HH-mm-ss')}`;
   }
 }

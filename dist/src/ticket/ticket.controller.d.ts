@@ -17,20 +17,30 @@ export declare class TicketController {
                 media_url: string;
                 key: string | null;
             };
+            traveler: {
+                id: number;
+                first_name: string;
+                last_name: string;
+                phone: string;
+                whatsapp_number: string;
+                image_url: string;
+            };
         } & {
             id: number;
-            created_at: Date;
-            updated_at: Date;
             ticket_reference: string;
-            booking_id: number;
             flight_number: string;
             departure_time: Date;
             arrival_time: Date;
             return_date: Date | null;
             departure_city: string;
             arrival_city: string;
+            created_at: Date;
+            updated_at: Date;
             is_deleted: boolean;
             last_notified: Date | null;
+            agencyId: number | null;
+            agentId: number | null;
+            travelerId: number | null;
         })[];
         totalCount: number;
         totalPages: number;

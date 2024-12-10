@@ -106,7 +106,7 @@ __decorate([
 class ICreateTicket {
     tickets;
     agencySlug;
-    bookingId;
+    travelerId;
 }
 exports.ICreateTicket = ICreateTicket;
 __decorate([
@@ -123,11 +123,11 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsNumber)(),
     __metadata("design:type", Number)
-], ICreateTicket.prototype, "bookingId", void 0);
+], ICreateTicket.prototype, "travelerId", void 0);
 class IUpdateTickets {
     tickets;
     agencySlug;
-    bookingId;
+    travelerId;
 }
 exports.IUpdateTickets = IUpdateTickets;
 __decorate([
@@ -144,7 +144,7 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsNumber)(),
     __metadata("design:type", Number)
-], IUpdateTickets.prototype, "bookingId", void 0);
+], IUpdateTickets.prototype, "travelerId", void 0);
 class IRemoveTicket {
     ticketId;
     moveToRecycleBin;
@@ -170,10 +170,15 @@ __decorate([
 ], IRemoveTicket.prototype, "agencySlug", void 0);
 class ITicketListFilters {
     agencySlug;
-    bookingId;
+    travelerId;
     isDeleted;
+    travelerPhone;
+    whatsappNumber;
     page = 1;
     size = 5;
+    startDate;
+    endDate;
+    departureDate;
 }
 exports.ITicketListFilters = ITicketListFilters;
 __decorate([
@@ -184,12 +189,22 @@ __decorate([
     (0, class_validator_1.IsNumberString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
-], ITicketListFilters.prototype, "bookingId", void 0);
+], ITicketListFilters.prototype, "travelerId", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], ITicketListFilters.prototype, "isDeleted", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], ITicketListFilters.prototype, "travelerPhone", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], ITicketListFilters.prototype, "whatsappNumber", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)(),
@@ -202,6 +217,21 @@ __decorate([
     (0, class_transformer_1.Transform)(({ value }) => Math.max(1, parseInt(value))),
     __metadata("design:type", Number)
 ], ITicketListFilters.prototype, "size", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], ITicketListFilters.prototype, "startDate", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], ITicketListFilters.prototype, "endDate", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], ITicketListFilters.prototype, "departureDate", void 0);
 class PermenantTicketDelete {
     ticketId;
     agencySlug;

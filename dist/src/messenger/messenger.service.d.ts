@@ -15,7 +15,7 @@ export declare class MessengerService {
         agencyWhatsappNumber: string;
         agencyPhoneNumber: string;
         authToken: string;
-    }): Promise<any>;
+    }): Promise<void>;
     sendWAOTPMessage({ phoneNumberId, to, code, authToken, }: {
         phoneNumberId: string;
         to: string;

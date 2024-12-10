@@ -8,34 +8,33 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var ScheduleService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ScheduleService = void 0;
 const common_1 = require("@nestjs/common");
+const config_1 = require("@nestjs/config");
 const schedule_1 = require("@nestjs/schedule");
 const dayjs = require("dayjs");
 const messenger_service_1 = require("../messenger/messenger.service");
 const prisma_service_1 = require("../prisma.service");
-let ScheduleService = class ScheduleService {
+let ScheduleService = ScheduleService_1 = class ScheduleService {
     prismaService;
     messengerService;
-    constructor(prismaService, messengerService) {
+    configService;
+    logger = new common_1.Logger(ScheduleService_1.name);
+    constructor(prismaService, messengerService, configService) {
         this.prismaService = prismaService;
         this.messengerService = messengerService;
+        this.configService = configService;
     }
     async handleSendMessage() {
         const tickets = await this.prismaService.ticket.findMany({
             where: {
                 AND: [
                     {
-                        booking: {
-                            agency: {
-                                slug: 'daalo-airlines-travel-agency',
-                            },
-                        },
-                    },
-                    {
                         departure_time: {
                             lte: dayjs().add(3, 'day').toDate(),
+                            gte: dayjs().startOf('day').toDate(),
                         },
                     },
                     {
@@ -57,16 +56,17 @@ let ScheduleService = class ScheduleService {
             },
             include: {
                 ticket_media: true,
-                booking: {
-                    include: {
-                        traveler: true,
-                        agency: true,
-                    },
-                },
+                traveler: true,
+                agency: true,
             },
         });
+        this.logger.log(`Found ${tickets.length} tickets to notify about ` +
+            JSON.stringify(tickets));
         for (const ticket of tickets) {
-            if (ticket.ticket_media.media_url) {
+            this.logger.log(`Checking if ticket ${ticket.id} has media ` +
+                JSON.stringify(ticket?.ticket_media));
+            if (ticket?.ticket_media?.media_url) {
+                this.logger.log(`Sending message to ${ticket.traveler.whatsapp_number}`);
                 await this.prismaService.ticket.update({
                     where: {
                         id: ticket.id,
@@ -75,11 +75,13 @@ let ScheduleService = class ScheduleService {
                         last_notified: dayjs().toDate(),
                     },
                 });
-                const { booking: { agency, traveler }, } = ticket;
+                this.logger.log(`Updating last notified for ticket [${ticket.id}]`);
+                const { agency, traveler } = ticket;
+                this.logger.log(`Sending message to ${traveler.whatsapp_number}`);
                 await this.messengerService.sendWATicketAlert({
-                    phoneNumberId: process.env.PHONE_NUMBER_ID,
+                    phoneNumberId: this.configService.get('PHONE_NUMBER_ID'),
                     daysLeft: dayjs(ticket.departure_time).diff(dayjs(), 'days'),
-                    authToken: process.env.AUTH_TOKEN,
+                    authToken: this.configService.get('AUTH_TOKEN'),
                     agencyName: agency.name,
                     agencyPhoneNumber: agency.phone,
                     agencyWhatsappNumber: agency.phone,
@@ -104,9 +106,10 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], ScheduleService.prototype, "handleSendMessage", null);
-exports.ScheduleService = ScheduleService = __decorate([
+exports.ScheduleService = ScheduleService = ScheduleService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        messenger_service_1.MessengerService])
+        messenger_service_1.MessengerService,
+        config_1.ConfigService])
 ], ScheduleService);
 //# sourceMappingURL=schedule.service.js.map

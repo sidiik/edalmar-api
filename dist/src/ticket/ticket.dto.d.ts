@@ -20,12 +20,12 @@ export declare class IUpdateTicketItem {
 export declare class ICreateTicket {
     tickets: ICreateTicketItem[];
     agencySlug: string;
-    bookingId: number;
+    travelerId: number;
 }
 export declare class IUpdateTickets {
     tickets: IUpdateTicketItem[];
     agencySlug: string;
-    bookingId: number;
+    travelerId: number;
 }
 export declare class IRemoveTicket {
     ticketId: number;
@@ -35,10 +35,15 @@ export declare class IRemoveTicket {
 }
 export declare class ITicketListFilters {
     agencySlug: string;
-    bookingId: string;
+    travelerId: string;
     isDeleted: string;
+    travelerPhone: string;
+    whatsappNumber: string;
     page: number;
     size: number;
+    startDate: string;
+    endDate: string;
+    departureDate: string;
 }
 export declare class PermenantTicketDelete {
     ticketId: number;

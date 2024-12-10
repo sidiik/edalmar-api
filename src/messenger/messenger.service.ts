@@ -119,9 +119,11 @@ export class MessengerService {
         },
       );
 
-      return response.data;
+      this.logger.log(`Message sent to ${travelerWhatsappNumber}`);
+      this.logger.log(response.data);
     } catch (error) {
-      throw new ApiException(error.response, error.status);
+      this.logger.log("Failed to send message to traveler's whatsapp");
+      this.logger.error(JSON.stringify(error));
     }
   }
 
@@ -221,6 +223,7 @@ export class MessengerService {
     authToken: string;
   }) {
     try {
+      this.logger.log(`Sending message to ${travelerWhatsappNumber}`);
       const url = `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`;
       const response = await axios.post(
         url,
@@ -302,8 +305,13 @@ export class MessengerService {
         },
       );
 
+      this.logger.log(`Message sent to ${travelerWhatsappNumber}`);
+
       return response.data;
     } catch (error) {
+      this.logger.error(
+        `Error sending message to ${travelerWhatsappNumber} ` + error,
+      );
       throw new ApiException(error.response, error.status);
     }
   }

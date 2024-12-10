@@ -31,12 +31,6 @@ enum agent_status {
   inactive
 }
 
-enum booking_status {
-  pending
-  cancelled
-  confirmed
-}
-
 enum otp_reoson {
   sign_in
   password_reset
@@ -89,7 +83,7 @@ model agency {
   agent                agent[]
   agency_keys          agency_keys?
   traveler             traveler[]
-  booking              booking[]
+  ticket               ticket[]
 
   @@index([name, slug, agency_disabled, created_at])
 }
@@ -107,7 +101,7 @@ model agent {
   start_hour   Int?
   end_hour     Int?
   agency_keys  agency_keys[]
-  booking      booking[]
+  ticket       ticket[]
 
   @@index([user_id, agency_id, agent_status, created_at])
 }
@@ -189,35 +183,16 @@ model traveler {
   notifications_enabled Boolean   @default(true)
   created_at            DateTime  @default(now())
   updated_at            DateTime  @updatedAt
-  booking               booking[]
+  tickets               ticket[]
 
   @@unique([email, phone, whatsapp_number, agency_id])
   @@index([email, phone, whatsapp_number, first_name, last_name, notifications_enabled, created_at])
 }
 
-model booking {
-  id                  Int            @id @default(autoincrement())
-  booking_description String?
-  traveler_id         Int
-  traveler            traveler       @relation(fields: [traveler_id], references: [id])
-  agent_id            Int
-  agent               agent          @relation(fields: [agent_id], references: [id])
-  agency_id           Int
-  agency              agency         @relation(fields: [agency_id], references: [id])
-  booking_status      booking_status @default(pending)
-  created_at          DateTime       @default(now())
-  updated_at          DateTime       @updatedAt
-  tickets             ticket[]
-
-  @@index([booking_description, traveler_id, agent_id, agency_id, booking_status, created_at])
-}
-
 model ticket {
   id               Int           @id @default(autoincrement())
   ticket_reference String
-  booking_id       Int
   flight_number    String
-  booking          booking       @relation(fields: [booking_id], references: [id])
   departure_time   DateTime
   arrival_time     DateTime
   return_date      DateTime?
@@ -228,6 +203,12 @@ model ticket {
   ticket_media     ticket_media?
   is_deleted       Boolean       @default(false)
   last_notified    DateTime?
+  agency           agency?       @relation(fields: [agencyId], references: [id])
+  agencyId         Int?
+  agent            agent?        @relation(fields: [agentId], references: [id])
+  agentId          Int?
+  traveler         traveler?     @relation(fields: [travelerId], references: [id])
+  travelerId       Int?
 
   @@index([ticket_reference, departure_time, arrival_time, return_date, departure_city, arrival_city])
 }

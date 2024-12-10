@@ -18,13 +18,13 @@ const redisStore = require("cache-manager-redis-store");
 const cache_manager_1 = require("@nestjs/cache-manager");
 const user_module_1 = require("./user/user.module");
 const traveler_module_1 = require("./traveler/traveler.module");
-const booking_module_1 = require("./booking/booking.module");
 const ticket_module_1 = require("./ticket/ticket.module");
 const throttler_1 = require("@nestjs/throttler");
 const core_1 = require("@nestjs/core");
 const throttler_guard_1 = require("../guards/throttler.guard");
 const schedule_module_1 = require("./schedule/schedule.module");
 const schedule_1 = require("@nestjs/schedule");
+const config_1 = require("@nestjs/config");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer.apply(metadata_middleware_1.IpMiddleware).forRoutes('*');
@@ -51,7 +51,6 @@ exports.AppModule = AppModule = __decorate([
             }),
             user_module_1.UserModule,
             traveler_module_1.TravelerModule,
-            booking_module_1.BookingModule,
             ticket_module_1.TicketModule,
             throttler_1.ThrottlerModule.forRoot([
                 {
@@ -61,6 +60,12 @@ exports.AppModule = AppModule = __decorate([
             ]),
             schedule_1.ScheduleModule.forRoot(),
             schedule_module_1.ScheduleMessageModule,
+            config_1.ConfigModule.forRoot({
+                envFilePath: process.env.NODE_ENV === 'production'
+                    ? '.env.production'
+                    : '.env.development',
+                isGlobal: true,
+            }),
         ],
         controllers: [],
         providers: [

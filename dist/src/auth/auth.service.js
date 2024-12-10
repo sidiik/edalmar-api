@@ -27,18 +27,21 @@ const jwt_1 = require("@nestjs/jwt");
 const uuid_1 = require("uuid");
 const cache_manager_1 = require("@nestjs/cache-manager");
 const logger_service_1 = require("../logger/logger.service");
+const config_1 = require("@nestjs/config");
 let AuthService = class AuthService {
     prismaService;
     messengerService;
     jwtService;
     dbLoggerService;
     cacheManager;
-    constructor(prismaService, messengerService, jwtService, dbLoggerService, cacheManager) {
+    configService;
+    constructor(prismaService, messengerService, jwtService, dbLoggerService, cacheManager, configService) {
         this.prismaService = prismaService;
         this.messengerService = messengerService;
         this.jwtService = jwtService;
         this.dbLoggerService = dbLoggerService;
         this.cacheManager = cacheManager;
+        this.configService = configService;
     }
     async requestOTP(data, metadata) {
         try {
@@ -62,8 +65,8 @@ let AuthService = class AuthService {
             });
             return this.sendOtpMessage({
                 agencyName: '',
-                authToken: process.env.AUTH_TOKEN,
-                phoneNumberId: process.env.PHONE_NUMBER_ID,
+                authToken: this.configService.get('AUTH_TOKEN'),
+                phoneNumberId: this.configService.get('PHONE_NUMBER_ID'),
                 user,
                 reason: data.reason,
             });
@@ -170,8 +173,8 @@ let AuthService = class AuthService {
                     return this.sendOtpMessage({
                         user,
                         agencyName: agent.agency.name,
-                        authToken: process.env.AUTH_TOKEN,
-                        phoneNumberId: process.env.PHONE_NUMBER_ID,
+                        authToken: this.configService.get('AUTH_TOKEN'),
+                        phoneNumberId: this.configService.get('PHONE_NUMBER_ID'),
                     });
                 }
                 await this.prismaService.user.update({
@@ -229,8 +232,8 @@ let AuthService = class AuthService {
                 return this.sendOtpMessage({
                     user,
                     agencyName: '',
-                    phoneNumberId: process.env.PHONE_NUMBER_ID,
-                    authToken: process.env.AUTH_TOKEN,
+                    phoneNumberId: this.configService.get('PHONE_NUMBER_ID'),
+                    authToken: this.configService.get('AUTH_TOKEN'),
                 });
             }
             await this.prismaService.user.update({
@@ -396,7 +399,7 @@ let AuthService = class AuthService {
             }
             res.cookie('refresh_token', refresh_token, {
                 httpOnly: true,
-                sameSite: 'none',
+                sameSite: 'strict',
                 secure: process.env.NODE_ENV === 'production',
                 expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1),
             });
@@ -513,6 +516,7 @@ exports.AuthService = AuthService = __decorate([
         messenger_service_1.MessengerService,
         jwt_1.JwtService,
         logger_service_1.DBLoggerService,
-        cache_manager_1.Cache])
+        cache_manager_1.Cache,
+        config_1.ConfigService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

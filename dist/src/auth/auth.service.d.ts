@@ -7,13 +7,15 @@ import { JwtService } from '@nestjs/jwt';
 import { Response } from 'express';
 import { Cache } from '@nestjs/cache-manager';
 import { DBLoggerService } from 'src/logger/logger.service';
+import { ConfigService } from '@nestjs/config';
 export declare class AuthService {
     private readonly prismaService;
     private readonly messengerService;
     private readonly jwtService;
     private readonly dbLoggerService;
     private cacheManager;
-    constructor(prismaService: PrismaService, messengerService: MessengerService, jwtService: JwtService, dbLoggerService: DBLoggerService, cacheManager: Cache);
+    private readonly configService;
+    constructor(prismaService: PrismaService, messengerService: MessengerService, jwtService: JwtService, dbLoggerService: DBLoggerService, cacheManager: Cache, configService: ConfigService);
     requestOTP(data: OTPReason, metadata: any): Promise<ApiResponse<{
         is2faEnabled: boolean;
         identity: number;
@@ -43,15 +45,20 @@ export declare class AuthService {
         updated_at: Date;
         otp: string;
         user_id: number;
-        expires_at: Date;
         reason: import(".prisma/client").$Enums.otp_reoson;
         is_active: boolean;
+        expires_at: Date;
     }>;
     getTokensThroughOtp(token: string, identity: number, res: Response, metadata: any): Promise<ApiResponse<any>>;
     storeTokensInCookie(res: Response, access_token: string, refresh_token: string, user_id: number, userAgent: string, ipAddress: string, device_id?: string): Promise<void>;
     refreshToken(res: Response, user_id: number, metadata: any): Promise<ApiResponse<any>>;
     getUserById(id: number): Promise<{
         id: number;
+        created_at: Date;
+        updated_at: Date;
+        email: string;
+        whatsapp_number: string;
+        address: string;
         firstname: string;
         lastname: string;
         first_login: boolean;
@@ -60,13 +67,8 @@ export declare class AuthService {
         lock_until: Date | null;
         is_2fa_enabled: boolean;
         is_suspended: boolean;
-        address: string;
-        email: string;
         password: string;
         phone_number: string;
-        whatsapp_number: string;
-        created_at: Date;
-        updated_at: Date;
         role: import(".prisma/client").$Enums.role;
         refresh_token_version: string | null;
     }>;

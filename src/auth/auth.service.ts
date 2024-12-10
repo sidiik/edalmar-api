@@ -20,6 +20,7 @@ import { Response } from 'express';
 import { v4 as uuid } from 'uuid';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { DBLoggerService } from 'src/logger/logger.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
@@ -29,6 +30,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly dbLoggerService: DBLoggerService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private readonly configService: ConfigService,
   ) {}
 
   // Request otp
@@ -59,8 +61,8 @@ export class AuthService {
 
       return this.sendOtpMessage({
         agencyName: '',
-        authToken: process.env.AUTH_TOKEN,
-        phoneNumberId: process.env.PHONE_NUMBER_ID,
+        authToken: this.configService.get('AUTH_TOKEN'),
+        phoneNumberId: this.configService.get('PHONE_NUMBER_ID'),
         user,
         reason: data.reason,
       });
@@ -198,8 +200,8 @@ export class AuthService {
           return this.sendOtpMessage({
             user,
             agencyName: agent.agency.name,
-            authToken: process.env.AUTH_TOKEN,
-            phoneNumberId: process.env.PHONE_NUMBER_ID,
+            authToken: this.configService.get('AUTH_TOKEN'),
+            phoneNumberId: this.configService.get('PHONE_NUMBER_ID'),
           });
         }
 
@@ -290,8 +292,8 @@ export class AuthService {
         return this.sendOtpMessage({
           user,
           agencyName: '',
-          phoneNumberId: process.env.PHONE_NUMBER_ID,
-          authToken: process.env.AUTH_TOKEN,
+          phoneNumberId: this.configService.get('PHONE_NUMBER_ID'),
+          authToken: this.configService.get('AUTH_TOKEN'),
         });
       }
 
@@ -550,7 +552,7 @@ export class AuthService {
 
       res.cookie('refresh_token', refresh_token, {
         httpOnly: true,
-        sameSite: 'none',
+        sameSite: 'strict',
         secure: process.env.NODE_ENV === 'production',
         expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1),
       });

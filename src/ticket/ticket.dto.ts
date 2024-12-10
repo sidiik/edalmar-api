@@ -81,7 +81,7 @@ export class ICreateTicket {
   agencySlug: string;
 
   @IsNumber()
-  bookingId: number;
+  travelerId: number;
 }
 
 export class IUpdateTickets {
@@ -95,7 +95,7 @@ export class IUpdateTickets {
   agencySlug: string;
 
   @IsNumber()
-  bookingId: number;
+  travelerId: number;
 }
 
 export class IRemoveTicket {
@@ -118,11 +118,19 @@ export class ITicketListFilters {
 
   @IsNumberString()
   @IsOptional()
-  bookingId: string;
+  travelerId: string;
 
   @IsString()
   @IsOptional()
   isDeleted: string;
+
+  @IsString()
+  @IsOptional()
+  travelerPhone: string;
+
+  @IsString()
+  @IsOptional()
+  whatsappNumber: string;
 
   @IsOptional()
   @IsNumber()
@@ -133,6 +141,18 @@ export class ITicketListFilters {
   @IsNumber()
   @Transform(({ value }) => Math.max(1, parseInt(value)))
   size: number = 5;
+
+  @IsString()
+  @IsOptional()
+  startDate: string;
+
+  @IsString()
+  @IsOptional()
+  endDate: string;
+
+  @IsString()
+  @IsOptional()
+  departureDate: string;
 }
 
 export class PermenantTicketDelete {

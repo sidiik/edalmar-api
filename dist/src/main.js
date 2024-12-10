@@ -5,6 +5,11 @@ const app_module_1 = require("./app.module");
 const common_1 = require("@nestjs/common");
 const cookieParser = require("cookie-parser");
 const logger_1 = require("../constants/logger");
+const dotenv = require("dotenv");
+const envFilePath = process.env.NODE_ENV === 'production'
+    ? '.env.production'
+    : '.env.development';
+dotenv.config({ path: envFilePath });
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule, {
         logger: logger_1.default,

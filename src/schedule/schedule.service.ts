@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Cron } from '@nestjs/schedule';
 import * as dayjs from 'dayjs';
 import { MessengerService } from 'src/messenger/messenger.service';
@@ -6,9 +7,12 @@ import { PrismaService } from 'src/prisma.service';
 
 @Injectable()
 export class ScheduleService {
+  private logger = new Logger(ScheduleService.name);
+
   constructor(
     private prismaService: PrismaService,
     private messengerService: MessengerService,
+    private readonly configService: ConfigService,
   ) {}
 
   @Cron('* * * * *')
@@ -17,15 +21,9 @@ export class ScheduleService {
       where: {
         AND: [
           {
-            booking: {
-              agency: {
-                slug: 'daalo-airlines-travel-agency',
-              },
-            },
-          },
-          {
             departure_time: {
               lte: dayjs().add(3, 'day').toDate(),
+              gte: dayjs().startOf('day').toDate(),
             },
           },
           {
@@ -47,17 +45,26 @@ export class ScheduleService {
       },
       include: {
         ticket_media: true,
-        booking: {
-          include: {
-            traveler: true,
-            agency: true,
-          },
-        },
+        traveler: true,
+        agency: true,
       },
     });
 
+    this.logger.log(
+      `Found ${tickets.length} tickets to notify about ` +
+        JSON.stringify(tickets),
+    );
+
     for (const ticket of tickets) {
-      if (ticket.ticket_media.media_url) {
+      this.logger.log(
+        `Checking if ticket ${ticket.id} has media ` +
+          JSON.stringify(ticket?.ticket_media),
+      );
+      if (ticket?.ticket_media?.media_url) {
+        this.logger.log(
+          `Sending message to ${ticket.traveler.whatsapp_number}`,
+        );
+
         await this.prismaService.ticket.update({
           where: {
             id: ticket.id,
@@ -67,14 +74,16 @@ export class ScheduleService {
           },
         });
 
-        const {
-          booking: { agency, traveler },
-        } = ticket;
+        this.logger.log(`Updating last notified for ticket [${ticket.id}]`);
+
+        const { agency, traveler } = ticket;
+
+        this.logger.log(`Sending message to ${traveler.whatsapp_number}`);
 
         await this.messengerService.sendWATicketAlert({
-          phoneNumberId: process.env.PHONE_NUMBER_ID,
+          phoneNumberId: this.configService.get('PHONE_NUMBER_ID'),
           daysLeft: dayjs(ticket.departure_time).diff(dayjs(), 'days'),
-          authToken: process.env.AUTH_TOKEN,
+          authToken: this.configService.get('AUTH_TOKEN'),
           agencyName: agency.name,
           agencyPhoneNumber: agency.phone,
           agencyWhatsappNumber: agency.phone,

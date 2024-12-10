@@ -9,13 +9,13 @@ import * as redisStore from 'cache-manager-redis-store';
 import { CacheModule } from '@nestjs/cache-manager';
 import { UserModule } from './user/user.module';
 import { TravelerModule } from './traveler/traveler.module';
-import { BookingModule } from './booking/booking.module';
 import { TicketModule } from './ticket/ticket.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { CustomThrottlerGuard } from 'guards/throttler.guard';
 import { ScheduleMessageModule } from './schedule/schedule.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -35,7 +35,6 @@ import { ScheduleModule } from '@nestjs/schedule';
     }),
     UserModule,
     TravelerModule,
-    BookingModule,
     TicketModule,
     ThrottlerModule.forRoot([
       {
@@ -45,6 +44,13 @@ import { ScheduleModule } from '@nestjs/schedule';
     ]),
     ScheduleModule.forRoot(),
     ScheduleMessageModule,
+    ConfigModule.forRoot({
+      envFilePath:
+        process.env.NODE_ENV === 'production'
+          ? '.env.production'
+          : '.env.development',
+      isGlobal: true,
+    }),
   ],
   controllers: [],
   providers: [
