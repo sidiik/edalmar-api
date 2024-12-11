@@ -25,6 +25,7 @@ const throttler_guard_1 = require("../guards/throttler.guard");
 const schedule_module_1 = require("./schedule/schedule.module");
 const schedule_1 = require("@nestjs/schedule");
 const config_1 = require("@nestjs/config");
+const application_module_1 = require("./application/application.module");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer.apply(metadata_middleware_1.IpMiddleware).forRoutes('*');
@@ -66,6 +67,7 @@ exports.AppModule = AppModule = __decorate([
                     : '.env.development',
                 isGlobal: true,
             }),
+            application_module_1.ApplicationModule,
         ],
         controllers: [],
         providers: [

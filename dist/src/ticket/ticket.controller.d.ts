@@ -9,6 +9,14 @@ export declare class TicketController {
     removeTicket(data: IRemoveTicket, req: Request): Promise<import("../../helpers/ApiResponse").ApiResponse<any>>;
     listTickets(filters: ITicketListFilters, req: Request): Promise<import("../../helpers/ApiResponse").ApiResponse<{
         data: ({
+            traveler: {
+                id: number;
+                whatsapp_number: string;
+                phone: string;
+                first_name: string;
+                last_name: string;
+                image_url: string;
+            };
             ticket_media: {
                 id: number;
                 created_at: Date;
@@ -17,16 +25,13 @@ export declare class TicketController {
                 media_url: string;
                 key: string | null;
             };
-            traveler: {
-                id: number;
-                first_name: string;
-                last_name: string;
-                phone: string;
-                whatsapp_number: string;
-                image_url: string;
-            };
         } & {
             id: number;
+            created_at: Date;
+            updated_at: Date;
+            agentId: number | null;
+            agencyId: number | null;
+            travelerId: number | null;
             ticket_reference: string;
             flight_number: string;
             departure_time: Date;
@@ -34,13 +39,8 @@ export declare class TicketController {
             return_date: Date | null;
             departure_city: string;
             arrival_city: string;
-            created_at: Date;
-            updated_at: Date;
             is_deleted: boolean;
             last_notified: Date | null;
-            agencyId: number | null;
-            agentId: number | null;
-            travelerId: number | null;
         })[];
         totalCount: number;
         totalPages: number;

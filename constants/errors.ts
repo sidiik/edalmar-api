@@ -37,4 +37,15 @@ const travelerErrors = {
   ticketInRecycleBin: 'Ticket is already in the recycle bin',
 };
 
-export { authErrors, agencyErrors, userErrors, travelerErrors };
+const applicationErrors = {
+  applicationNotFound: 'Application not found',
+  applicationReferenceExists: 'Application reference already exists',
+};
+
+export {
+  authErrors,
+  agencyErrors,
+  userErrors,
+  travelerErrors,
+  applicationErrors,
+};

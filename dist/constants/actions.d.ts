@@ -29,4 +29,9 @@ export declare const actions: {
         updated: string;
         deleted: string;
     };
+    application: {
+        created: string;
+        updated: string;
+        deleted: string;
+    };
 };

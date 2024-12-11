@@ -30,4 +30,9 @@ export const actions = {
     updated: 'ticket.updated',
     deleted: 'ticket.deleted',
   },
+  application: {
+    created: 'application.created',
+    updated: 'application.updated',
+    deleted: 'application.deleted',
+  },
 };

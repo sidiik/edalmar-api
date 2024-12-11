@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.travelerErrors = exports.userErrors = exports.agencyErrors = exports.authErrors = void 0;
+exports.applicationErrors = exports.travelerErrors = exports.userErrors = exports.agencyErrors = exports.authErrors = void 0;
 const authErrors = {
     invalidCredentials: 'Invalid email or password, please try again',
     account_temporarily_disabled: 'Your account has been temporarily disabled.',
@@ -37,4 +37,9 @@ const travelerErrors = {
     ticketInRecycleBin: 'Ticket is already in the recycle bin',
 };
 exports.travelerErrors = travelerErrors;
+const applicationErrors = {
+    applicationNotFound: 'Application not found',
+    applicationReferenceExists: 'Application reference already exists',
+};
+exports.applicationErrors = applicationErrors;
 //# sourceMappingURL=errors.js.map

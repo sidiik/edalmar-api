@@ -7,7 +7,7 @@ export class RequestLoggerMiddleware implements NestMiddleware {
   private readonly logger = new Logger(RequestLoggerMiddleware.name);
 
   use(req: Request, res: Response, next: NextFunction) {
-    const { ip, method, originalUrl } = req;
+    const { ip, method, originalUrl, query } = req;
     const userAgent = req.get('user-agent') || '';
 
     const startTime = Date.now();
@@ -30,6 +30,7 @@ export class RequestLoggerMiddleware implements NestMiddleware {
         JSON.stringify({
           timestamp: dayjs().format('DD-MM-YYYYTHH:mm:ss'),
           method,
+          query,
           url: originalUrl,
           status: statusCode,
           responseTime: `${responseTime}ms`,

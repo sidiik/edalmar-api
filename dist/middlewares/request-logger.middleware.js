@@ -13,7 +13,7 @@ const dayjs = require("dayjs");
 let RequestLoggerMiddleware = RequestLoggerMiddleware_1 = class RequestLoggerMiddleware {
     logger = new common_1.Logger(RequestLoggerMiddleware_1.name);
     use(req, res, next) {
-        const { ip, method, originalUrl } = req;
+        const { ip, method, originalUrl, query } = req;
         const userAgent = req.get('user-agent') || '';
         const startTime = Date.now();
         res.on('finish', () => {
@@ -30,6 +30,7 @@ let RequestLoggerMiddleware = RequestLoggerMiddleware_1 = class RequestLoggerMid
             logMethod.call(this.logger, JSON.stringify({
                 timestamp: dayjs().format('DD-MM-YYYYTHH:mm:ss'),
                 method,
+                query,
                 url: originalUrl,
                 status: statusCode,
                 responseTime: `${responseTime}ms`,

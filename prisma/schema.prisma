@@ -20,6 +20,19 @@ enum role {
   user
 }
 
+enum application_type {
+  visa
+  passport
+  certificate
+}
+
+enum application_status {
+  pending
+  approved
+  rejected
+  cancelled
+}
+
 enum agent_role {
   admin
   editor
@@ -66,24 +79,25 @@ model user {
 }
 
 model agency {
-  id                   Int          @id @default(autoincrement())
-  name                 String       @unique
-  slug                 String?      @unique
-  agency_disabled      Boolean      @default(false)
+  id                   Int           @id @default(autoincrement())
+  name                 String        @unique
+  slug                 String?       @unique
+  agency_disabled      Boolean       @default(false)
   logo_url             String?
   address              String
   phone                String
   email                String
-  created_at           DateTime     @default(now())
-  updated_at           DateTime     @updatedAt
-  user_lock_minutes    Int?         @default(5)
-  user_login_attempts  Int?         @default(5)
-  account_lock_enabled Boolean      @default(true)
-  max_agents           Int?         @default(5)
+  created_at           DateTime      @default(now())
+  updated_at           DateTime      @updatedAt
+  user_lock_minutes    Int?          @default(5)
+  user_login_attempts  Int?          @default(5)
+  account_lock_enabled Boolean       @default(true)
+  max_agents           Int?          @default(5)
   agent                agent[]
   agency_keys          agency_keys?
   traveler             traveler[]
   ticket               ticket[]
+  application          application[]
 
   @@index([name, slug, agency_disabled, created_at])
 }
@@ -102,6 +116,7 @@ model agent {
   end_hour     Int?
   agency_keys  agency_keys[]
   ticket       ticket[]
+  application  application[]
 
   @@index([user_id, agency_id, agent_status, created_at])
 }
@@ -168,7 +183,7 @@ model activity_log {
 }
 
 model traveler {
-  id                    Int       @id @default(autoincrement())
+  id                    Int           @id @default(autoincrement())
   first_name            String
   last_name             String
   email                 String?
@@ -179,11 +194,12 @@ model traveler {
   dob                   DateTime?
   image_url             String?
   agency_id             Int
-  agency                agency    @relation(fields: [agency_id], references: [id])
-  notifications_enabled Boolean   @default(true)
-  created_at            DateTime  @default(now())
-  updated_at            DateTime  @updatedAt
+  agency                agency        @relation(fields: [agency_id], references: [id])
+  notifications_enabled Boolean       @default(true)
+  created_at            DateTime      @default(now())
+  updated_at            DateTime      @updatedAt
   tickets               ticket[]
+  application           application[]
 
   @@unique([email, phone, whatsapp_number, agency_id])
   @@index([email, phone, whatsapp_number, first_name, last_name, notifications_enabled, created_at])
@@ -223,4 +239,22 @@ model ticket_media {
   updated_at DateTime @updatedAt
 
   @@index([media_url, created_at])
+}
+
+model application {
+  id                 Int                @id @default(autoincrement())
+  note               String?
+  application_ref    String             @unique
+  application_status application_status @default(pending)
+  metadata           String
+  application_type   application_type
+  created_at         DateTime           @default(now())
+  updated_at         DateTime           @updatedAt
+  traveler_id        Int?
+  traveler           traveler?          @relation(fields: [traveler_id], references: [id])
+  agency_id          Int
+  agency             agency             @relation(fields: [agency_id], references: [id])
+  agent_id           Int
+  agent              agent              @relation(fields: [agent_id], references: [id])
+  due                DateTime
 }

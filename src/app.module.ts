@@ -16,6 +16,7 @@ import { CustomThrottlerGuard } from 'guards/throttler.guard';
 import { ScheduleMessageModule } from './schedule/schedule.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule } from '@nestjs/config';
+import { ApplicationModule } from './application/application.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { ConfigModule } from '@nestjs/config';
           : '.env.development',
       isGlobal: true,
     }),
+    ApplicationModule,
   ],
   controllers: [],
   providers: [

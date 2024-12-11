@@ -30,4 +30,8 @@ declare const travelerErrors: {
     invalidOperation: string;
     ticketInRecycleBin: string;
 };
-export { authErrors, agencyErrors, userErrors, travelerErrors };
+declare const applicationErrors: {
+    applicationNotFound: string;
+    applicationReferenceExists: string;
+};
+export { authErrors, agencyErrors, userErrors, travelerErrors, applicationErrors, };
