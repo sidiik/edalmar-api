@@ -12,6 +12,7 @@ import {
   ApplicationStatus,
   ApplicationType,
   ICreateApplication,
+  IGetApplicationDetails,
   IListApplications,
   IUpdateApplication,
 } from './application.dto';
@@ -291,11 +292,13 @@ export class ApplicationService {
       } else if (filters?.priority === ApplicationPriority.low) {
         due = {
           gte: dayjs().add(7, 'day').toDate(),
-          lte: dayjs().add(14, 'day').toDate(),
         };
       } else {
         due = undefined;
       }
+
+      this.logger.log('Notification due checkup');
+      this.logger.log(due);
 
       const where: Prisma.applicationWhereInput = {
         traveler: {
@@ -318,6 +321,10 @@ export class ApplicationService {
           lte: !filters?.endDate
             ? undefined
             : dayjs(filters?.endDate).endOf('day').toDate(),
+        },
+
+        agency: {
+          slug: filters.agencySlug,
         },
 
         application_status:
@@ -366,6 +373,66 @@ export class ApplicationService {
       });
     } catch (error) {
       console.log(error);
+      throw new ApiException(error.response, error.status);
+    }
+  }
+
+  async getApplicationDetails(data: IGetApplicationDetails, metadata: any) {
+    try {
+      // check if agency is disabled
+      await this.agencyService.checkAgencyDisabled(data?.agencySlug);
+
+      // Check if agent is linked to agency
+      this.logger.log('Checking if agent is linked to agency');
+      await this.agencyService.checkAgentLinked(
+        metadata.user,
+        data?.agencySlug,
+        [agent_role.admin, agent_role.editor],
+      );
+
+      // Get application details
+      this.logger.log('Getting application details');
+
+      const application = await this.prismaService.application.findFirst({
+        where: {
+          id: +data.applicationId,
+          agency: {
+            slug: data.agencySlug,
+          },
+        },
+        include: {
+          agent: {
+            select: {
+              id: true,
+              role: true,
+              user: {
+                select: {
+                  id: true,
+                  phone_number: true,
+                  whatsapp_number: true,
+                  firstname: true,
+                  lastname: true,
+                },
+              },
+            },
+          },
+          traveler: true,
+        },
+      });
+
+      if (!application) {
+        this.logger.warn('Application does not exist');
+        throw new NotFoundException(
+          ApiResponse.failure(
+            null,
+            applicationErrors.applicationNotFound,
+            HttpStatus.NOT_FOUND,
+          ),
+        );
+      }
+
+      return ApiResponse.success(application);
+    } catch (error) {
       throw new ApiException(error.response, error.status);
     }
   }

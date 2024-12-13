@@ -52,3 +52,7 @@ export declare class IListApplications {
     endDate: string;
     priority: ApplicationPriority;
 }
+export declare class IGetApplicationDetails {
+    applicationId: string;
+    agencySlug: string;
+}

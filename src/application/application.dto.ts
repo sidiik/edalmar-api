@@ -134,3 +134,11 @@ export class IListApplications {
   @IsOptional()
   priority: ApplicationPriority;
 }
+
+export class IGetApplicationDetails {
+  @IsNumberString()
+  applicationId: string;
+
+  @IsString()
+  agencySlug: string;
+}

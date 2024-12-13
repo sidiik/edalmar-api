@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.IListApplications = exports.IUpdateApplication = exports.ICreateApplication = exports.ApplicationStatus = exports.ApplicationType = exports.ApplicationPriority = void 0;
+exports.IGetApplicationDetails = exports.IListApplications = exports.IUpdateApplication = exports.ICreateApplication = exports.ApplicationStatus = exports.ApplicationType = exports.ApplicationPriority = void 0;
 const client_1 = require("@prisma/client");
 const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
@@ -198,4 +198,17 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], IListApplications.prototype, "priority", void 0);
+class IGetApplicationDetails {
+    applicationId;
+    agencySlug;
+}
+exports.IGetApplicationDetails = IGetApplicationDetails;
+__decorate([
+    (0, class_validator_1.IsNumberString)(),
+    __metadata("design:type", String)
+], IGetApplicationDetails.prototype, "applicationId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], IGetApplicationDetails.prototype, "agencySlug", void 0);
 //# sourceMappingURL=application.dto.js.map

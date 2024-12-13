@@ -40,7 +40,7 @@ import { ApplicationModule } from './application/application.module';
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
-        limit: 10,
+        limit: 60,
       },
     ]),
     ScheduleModule.forRoot(),

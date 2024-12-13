@@ -28,6 +28,9 @@ let ApplicationController = class ApplicationController {
     async listApplications(data, req) {
         return this.applicationService.listApplications(data, req.metadata);
     }
+    async applicationDetails(data, req) {
+        return this.applicationService.getApplicationDetails(data, req.metadata);
+    }
     async createApplication(data, req) {
         return this.applicationService.createApplication(data, req.metadata);
     }
@@ -46,6 +49,16 @@ __decorate([
     __metadata("design:paramtypes", [application_dto_1.IListApplications, Object]),
     __metadata("design:returntype", Promise)
 ], ApplicationController.prototype, "listApplications", null);
+__decorate([
+    (0, common_1.Get)('details'),
+    (0, common_1.UseGuards)(jwt_guard_1.AuthGuard, authorize_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(client_1.role.admin, client_1.role.agent_user),
+    __param(0, (0, common_1.Query)()),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [application_dto_1.IGetApplicationDetails, Object]),
+    __metadata("design:returntype", Promise)
+], ApplicationController.prototype, "applicationDetails", null);
 __decorate([
     (0, common_1.Post)('create'),
     (0, common_1.UseGuards)(jwt_guard_1.AuthGuard, authorize_guard_1.RolesGuard),

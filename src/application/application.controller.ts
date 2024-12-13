@@ -15,6 +15,7 @@ import { role } from '@prisma/client';
 import { Roles } from 'decorators/roles.decorator';
 import {
   ICreateApplication,
+  IGetApplicationDetails,
   IListApplications,
   IUpdateApplication,
 } from './application.dto';
@@ -32,6 +33,16 @@ export class ApplicationController {
     @Req() req: Request,
   ) {
     return this.applicationService.listApplications(data, req.metadata);
+  }
+
+  @Get('details')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(role.admin, role.agent_user)
+  async applicationDetails(
+    @Query() data: IGetApplicationDetails,
+    @Req() req: Request,
+  ) {
+    return this.applicationService.getApplicationDetails(data, req.metadata);
   }
 
   @Post('create')

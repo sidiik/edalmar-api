@@ -205,12 +205,13 @@ let ApplicationService = ApplicationService_1 = class ApplicationService {
             else if (filters?.priority === application_dto_1.ApplicationPriority.low) {
                 due = {
                     gte: dayjs().add(7, 'day').toDate(),
-                    lte: dayjs().add(14, 'day').toDate(),
                 };
             }
             else {
                 due = undefined;
             }
+            this.logger.log('Notification due checkup');
+            this.logger.log(due);
             const where = {
                 traveler: {
                     id: !+filters?.travelerId ? undefined : +filters?.travelerId,
@@ -231,6 +232,9 @@ let ApplicationService = ApplicationService_1 = class ApplicationService {
                     lte: !filters?.endDate
                         ? undefined
                         : dayjs(filters?.endDate).endOf('day').toDate(),
+                },
+                agency: {
+                    slug: filters.agencySlug,
                 },
                 application_status: filters?.applicationStatus !== application_dto_1.ApplicationStatus.all
                     ? filters?.applicationStatus
@@ -273,6 +277,48 @@ let ApplicationService = ApplicationService_1 = class ApplicationService {
         }
         catch (error) {
             console.log(error);
+            throw new ApiException_1.ApiException(error.response, error.status);
+        }
+    }
+    async getApplicationDetails(data, metadata) {
+        try {
+            await this.agencyService.checkAgencyDisabled(data?.agencySlug);
+            this.logger.log('Checking if agent is linked to agency');
+            await this.agencyService.checkAgentLinked(metadata.user, data?.agencySlug, [client_1.agent_role.admin, client_1.agent_role.editor]);
+            this.logger.log('Getting application details');
+            const application = await this.prismaService.application.findFirst({
+                where: {
+                    id: +data.applicationId,
+                    agency: {
+                        slug: data.agencySlug,
+                    },
+                },
+                include: {
+                    agent: {
+                        select: {
+                            id: true,
+                            role: true,
+                            user: {
+                                select: {
+                                    id: true,
+                                    phone_number: true,
+                                    whatsapp_number: true,
+                                    firstname: true,
+                                    lastname: true,
+                                },
+                            },
+                        },
+                    },
+                    traveler: true,
+                },
+            });
+            if (!application) {
+                this.logger.warn('Application does not exist');
+                throw new common_1.NotFoundException(ApiResponse_1.ApiResponse.failure(null, index_1.applicationErrors.applicationNotFound, common_1.HttpStatus.NOT_FOUND));
+            }
+            return ApiResponse_1.ApiResponse.success(application);
+        }
+        catch (error) {
             throw new ApiException_1.ApiException(error.response, error.status);
         }
     }
