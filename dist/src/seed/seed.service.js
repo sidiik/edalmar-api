@@ -31,6 +31,7 @@ let SeedService = class SeedService {
                     phone_number: '252636539685',
                     whatsapp_number: '252636539685',
                     address: 'Hargeisa Somaliland',
+                    is_2fa_enabled: false,
                 },
             });
             return {

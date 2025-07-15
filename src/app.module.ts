@@ -29,7 +29,7 @@ import { ApplicationModule } from './application/application.module';
       socket: {
         host: 'localhost',
         port: 6739,
-        password: process.env.REDIS_PASSWORD,
+        password: 'admin',
       },
       isGlobal: true,
       ttl: 3600000 * 3,
